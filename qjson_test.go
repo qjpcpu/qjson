@@ -139,7 +139,7 @@ func (suite *JSONTreeTestSuite) TestDecodeComplexJSON() {
 	suite.Equal(`"Galley"`, sales.Value.ArrayValues[1].ObjectValues[1].Value.Value)
 }
 
-func (suite *JSONTreeTestSuite) TestDecodeComplexJSON2() {
+func (suite *JSONTreeTestSuite) TestDecodeComplexJSONWithIndent() {
 	m := make(map[string]string)
 	m["Text"] = text2
 	data, _ := json.MarshalIndent(m, "\t", "    ")
@@ -161,7 +161,8 @@ func (suite *JSONTreeTestSuite) TestDecodeComplexJSON2() {
 	suite.Nil(err)
 }
 
-func (suite *JSONTreeTestSuite) TestDecodeComplexJSON3() {
+func (suite *JSONTreeTestSuite) TestColorMarshal() {
+	MaxColorLevel = 10
 	tree, err := Decode([]byte(text1))
 	suite.Nil(err)
 	tree.ColoredByLevel()
@@ -172,7 +173,7 @@ func (suite *JSONTreeTestSuite) TestDecodeComplexJSON3() {
 	suite.Nil(err)
 }
 
-func (suite *JSONTreeTestSuite) TestDecodeComplexJSON4() {
+func (suite *JSONTreeTestSuite) TestDecodeComplexJSONWithFloat() {
 	tree, err := Decode([]byte(text3))
 	suite.Nil(err)
 

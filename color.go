@@ -21,18 +21,19 @@ func PrettyMarshal(v interface{}) []byte {
 type Color int
 
 const (
-	Green Color = iota + 1
+	Yellow Color = iota + 1
 	Cyan
+	Green
 	Magenta
-	Yellow
-	Red
 	Blue
+	Red
 	White
 	Black
 )
 
 var (
-	colorFuncs = []func(a ...interface{}) string{
+	MaxColorLevel = 3
+	colorFuncs    = []func(a ...interface{}) string{
 		func(e ...interface{}) string {
 			var s string
 			for _, v := range e {
@@ -40,12 +41,12 @@ var (
 			}
 			return s
 		},
-		color.New(color.FgGreen).SprintFunc(),
-		color.New(color.FgCyan).SprintFunc(),
-		color.New(color.FgMagenta).SprintFunc(),
 		color.New(color.FgYellow).SprintFunc(),
-		color.New(color.FgRed).SprintFunc(),
+		color.New(color.FgCyan).SprintFunc(),
+		color.New(color.FgGreen).SprintFunc(),
+		color.New(color.FgMagenta).SprintFunc(),
 		color.New(color.FgBlue).SprintFunc(),
+		color.New(color.FgRed).SprintFunc(),
 		color.New(color.FgWhite, color.BgBlack).SprintFunc(),
 		color.New(color.FgBlack, color.BgWhite).SprintFunc(),
 	}
@@ -60,6 +61,9 @@ func (n *Node) SetColor(c Color) {
 }
 
 func (n *Node) setLeveledColor(idx int) {
+	if idx > MaxColorLevel {
+		return
+	}
 	c := Color(idx % len(colorFuncs))
 	switch n.Type {
 	case Null:

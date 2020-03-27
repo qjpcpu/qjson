@@ -46,6 +46,15 @@ func (t *JSONTree) MarshalJSON() ([]byte, error) {
 	return t.Root.MarshalJSON()
 }
 
+func (t *JSONTree) UnmarshalJSON(data []byte) error {
+	if tree, err := Decode(data); err != nil {
+		return err
+	} else {
+		*t = *tree
+	}
+	return nil
+}
+
 func (t *JSONTree) ColorfulMarshal() []byte {
 	return t.Root.unsafeMarshal()
 }

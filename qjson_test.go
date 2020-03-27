@@ -1,6 +1,7 @@
 package qjson
 
 import (
+	"io/ioutil"
 	"testing"
 
 	"encoding/json"
@@ -21,6 +22,88 @@ func (suite *JSONTreeTestSuite) AfterTest(suiteName, testName string) {
 
 func TestJSONTree(t *testing.T) {
 	suite.Run(t, &JSONTreeTestSuite{})
+}
+
+func (suite *JSONTreeTestSuite) ValidJSON(data []byte) {
+	tree, err := Decode(data)
+	suite.Nil(err)
+	m := make(map[string]interface{})
+	suite.Nil(json.Unmarshal(data, &m))
+	suite.compareTreeWithMap(m, tree.Root.ObjectValues)
+}
+
+func (suite *JSONTreeTestSuite) compareTreeWithArray(m []interface{}, elems []Node) {
+	suite.Equal(len(m), len(elems))
+	for i, item := range m {
+		tv := elems[i]
+		switch elems[i].Type {
+		case Null:
+			suite.Nil(item)
+		case String:
+			var s string
+			suite.Nil(json.Unmarshal([]byte(tv.Value), &s))
+			suite.Equal(item.(string), s)
+		case Bool:
+			var s bool
+			suite.Nil(json.Unmarshal([]byte(tv.Value), &s))
+			suite.Equal(item.(bool), s)
+		case Number:
+			vs, _ := json.Marshal(item)
+			suite.Equal(string(vs), tv.Value)
+		case Object:
+			sub, ok := item.(map[string]interface{})
+			suite.True(ok)
+			suite.compareTreeWithMap(sub, tv.ObjectValues)
+		case Array:
+			arr, ok := item.([]interface{})
+			suite.True(ok)
+			suite.compareTreeWithArray(arr, tv.ArrayValues)
+		}
+	}
+}
+
+func (suite *JSONTreeTestSuite) compareTreeWithMap(m map[string]interface{}, objectValues []ObjectElem) {
+	suite.Equal(len(m), len(objectValues))
+	for k, v := range m {
+		var tv Node
+		var found bool
+		for _, kv := range objectValues {
+			var str string
+			suite.Nil(json.Unmarshal([]byte(kv.Key.Value), &str))
+			if k == str {
+				found = true
+				tv = kv.Value
+				break
+			}
+		}
+		if !found {
+			suite.True(found, "should find key %s", k)
+			return
+		}
+		switch tv.Type {
+		case Null:
+			suite.Nil(v)
+		case String:
+			var s string
+			suite.Nil(json.Unmarshal([]byte(tv.Value), &s))
+			suite.Equal(v.(string), s)
+		case Bool:
+			var s bool
+			suite.Nil(json.Unmarshal([]byte(tv.Value), &s))
+			suite.Equal(v.(bool), s)
+		case Number:
+			vs, _ := json.Marshal(v)
+			suite.Equal(string(vs), tv.Value)
+		case Object:
+			sub, ok := v.(map[string]interface{})
+			suite.True(ok)
+			suite.compareTreeWithMap(sub, tv.ObjectValues)
+		case Array:
+			arr, ok := v.([]interface{})
+			suite.True(ok)
+			suite.compareTreeWithArray(arr, tv.ArrayValues)
+		}
+	}
 }
 
 func (suite *JSONTreeTestSuite) TestDecodeInvalidJSON() {
@@ -100,6 +183,11 @@ func (suite *JSONTreeTestSuite) TestDecodeObject() {
 	suite.Equal(Null, em.ObjectValues[2].Value.Type)
 	suite.Equal(`"other"`, em.ObjectValues[2].Key.Value)
 	suite.Equal(`null`, em.ObjectValues[2].Value.Value)
+}
+
+func (suite *JSONTreeTestSuite) TestValidateObject() {
+	bytes := []byte(`{"hello":"world","num":2,"em":{"100":true,"lang":"golang", "other": null}}`)
+	suite.ValidJSON(bytes)
 }
 
 func (suite *JSONTreeTestSuite) TestDecodeArray() {
@@ -212,6 +300,19 @@ func (suite *JSONTreeTestSuite) TestDecodeComplexJSONWithStd() {
 	var s string
 	json.Unmarshal([]byte(tree.Root.ObjectValues[0].Value.Value), &s)
 	suite.Equal(m["content"].(string), s)
+}
+
+func (suite *JSONTreeTestSuite) TestWithStdLib() {
+	files, _ := ioutil.ReadDir("./test_feed")
+	if len(files) > 0 {
+		suite.T().Logf("there are %d json files for testing", len(files))
+	}
+	for _, file := range files {
+		filename := "./test_feed/" + file.Name()
+		data, err := ioutil.ReadFile(filename)
+		suite.Nil(err, "read test file %s", filename)
+		suite.ValidJSON(data)
+	}
 }
 
 /* test JSON snippets */

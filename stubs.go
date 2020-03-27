@@ -2,6 +2,7 @@ package qjson
 
 import (
 	"errors"
+	"strings"
 )
 
 type NodeType int
@@ -31,6 +32,14 @@ type ObjectElem struct {
 /* node methods */
 func (n *Node) IsNull() bool {
 	return n.Type == Null
+}
+
+func (n *Node) IsInteger() bool {
+	return n.Type == Number && !strings.Contains(n.Value, string([]byte{dotChar}))
+}
+
+func (n *Node) IsFloat() bool {
+	return n.Type == Number && strings.Contains(n.Value, string([]byte{dotChar}))
 }
 
 type JSONTree struct {

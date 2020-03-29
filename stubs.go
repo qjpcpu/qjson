@@ -2,20 +2,29 @@ package qjson
 
 import (
 	"errors"
-	"strings"
 )
 
+// NodeType describe a json node type
 type NodeType int
 
 const (
+	// Null json node means null
 	Null NodeType = iota
+	// String json node means "any text"
 	String
+	// Bool json node means true/false
 	Bool
-	Number
+	// Integer json node means integer
+	Integer
+	// Float json node means float number
+	Float
+	// Object json node means k-v object
 	Object
+	// Array json node means array json nodes
 	Array
 )
 
+// Node represent json node
 type Node struct {
 	Type         NodeType
 	Value        string
@@ -24,46 +33,47 @@ type Node struct {
 	Color        Color
 }
 
+// ObjectElem represent an object
 type ObjectElem struct {
 	Key   Node
 	Value Node
 }
 
 /* node methods */
+
+// IsNull tell node is null or not
 func (n *Node) IsNull() bool {
 	return n.Type == Null
 }
 
-func (n *Node) IsInteger() bool {
-	return n.Type == Number && !strings.Contains(n.Value, string([]byte{dotChar}))
-}
-
-func (n *Node) IsFloat() bool {
-	return n.Type == Number && strings.Contains(n.Value, string([]byte{dotChar}))
-}
-
+// JSONTree represent full json
 type JSONTree struct {
 	Root Node
 }
 
 /* tree methods */
+
+// IsNull tell node is null or not
 func (t *JSONTree) IsNull() bool {
 	return t.Root.IsNull()
 }
 
+// MarshalJSON json marshaller
 func (t *JSONTree) MarshalJSON() ([]byte, error) {
 	return t.Root.MarshalJSON()
 }
 
-func (t *JSONTree) UnmarshalJSON(data []byte) error {
-	if tree, err := Decode(data); err != nil {
+// UnmarshalJSON json unmarshaller
+func (t *JSONTree) UnmarshalJSON(data []byte) (err error) {
+	var tree *JSONTree
+	if tree, err = Decode(data); err != nil {
 		return err
-	} else {
-		*t = *tree
 	}
-	return nil
+	*t = *tree
+	return
 }
 
+// ColorfulMarshal print json with color
 func (t *JSONTree) ColorfulMarshal() []byte {
 	return t.Root.unsafeMarshal()
 }
@@ -71,23 +81,6 @@ func (t *JSONTree) ColorfulMarshal() []byte {
 /* tree generator */
 func makeNewTree() *JSONTree {
 	return &JSONTree{}
-}
-
-/* node generator */
-func makeNullNode() Node {
-	return Node{Type: Null}
-}
-
-func makeStringNode(val string) Node {
-	return Node{Type: String, Value: val}
-}
-
-func makeBoolNode(trueFalse string) Node {
-	return Node{Type: Bool, Value: trueFalse}
-}
-
-func makeNumberNode(v string) Node {
-	return Node{Type: Number, Value: v}
 }
 
 /* errors */
@@ -113,7 +106,7 @@ func (n *Node) unsafeMarshal() []byte {
 		} else {
 			buf = []byte(fn(falseVal))
 		}
-	case Number:
+	case Integer, Float:
 		buf = []byte(fn(n.Value))
 	case Object:
 		buf = append(buf, objectStart)
@@ -141,6 +134,7 @@ func (n *Node) unsafeMarshal() []byte {
 	return buf
 }
 
+// MarshalJSON node is json marshaller too
 func (n *Node) MarshalJSON() ([]byte, error) {
 	var buf []byte
 	var err error
@@ -155,7 +149,7 @@ func (n *Node) MarshalJSON() ([]byte, error) {
 		} else {
 			buf = []byte(falseVal)
 		}
-	case Number:
+	case Integer, Float:
 		buf = []byte(n.Value)
 	case Object:
 		buf = append(buf, objectStart)
@@ -200,6 +194,7 @@ func (e ObjectElem) unsafeMarshal() []byte {
 	return buf
 }
 
+// MarshalJSON object node is json marshaller
 func (e ObjectElem) MarshalJSON() ([]byte, error) {
 	var buf []byte
 	key, err := e.Key.MarshalJSON()

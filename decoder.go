@@ -3,8 +3,10 @@ package qjson
 import (
 	"errors"
 	"fmt"
+	"strings"
 )
 
+// Decode raw json bytes into JSONTree
 func Decode(jsonBytes []byte) (*JSONTree, error) {
 	tree := makeNewTree()
 	offset := searchFirstValidChar(jsonBytes, 0)
@@ -173,8 +175,13 @@ func fillNumberNode(jsonBytes []byte, offset int, node *Node) int {
 		}
 		break
 	}
-	node.Type = Number
+
 	node.Value = string(jsonBytes[start:offset])
+	if strings.Contains(node.Value, dotString) {
+		node.Type = Float
+	} else {
+		node.Type = Integer
+	}
 	return offset
 }
 

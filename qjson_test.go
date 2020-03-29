@@ -47,7 +47,7 @@ func (suite *JSONTreeTestSuite) compareTreeWithArray(m []interface{}, elems []No
 			var s bool
 			suite.Nil(json.Unmarshal([]byte(tv.Value), &s))
 			suite.Equal(item.(bool), s)
-		case Number:
+		case Integer, Float:
 			vs, _ := json.Marshal(item)
 			suite.Equal(string(vs), tv.Value)
 		case Object:
@@ -91,7 +91,7 @@ func (suite *JSONTreeTestSuite) compareTreeWithMap(m map[string]interface{}, obj
 			var s bool
 			suite.Nil(json.Unmarshal([]byte(tv.Value), &s))
 			suite.Equal(v.(bool), s)
-		case Number:
+		case Float, Integer:
 			vs, _ := json.Marshal(v)
 			suite.Equal(string(vs), tv.Value)
 		case Object:
@@ -125,7 +125,7 @@ func (suite *JSONTreeTestSuite) TestDecodeSimpleInt() {
 	bytes := []byte(`1`)
 	tree, err := Decode(bytes)
 	suite.Nil(err)
-	suite.Equal(Number, tree.Root.Type)
+	suite.Equal(Integer, tree.Root.Type)
 	suite.Equal("1", tree.Root.Value)
 }
 
@@ -163,13 +163,13 @@ func (suite *JSONTreeTestSuite) TestDecodeObject() {
 
 	suite.Equal(String, tree.Root.ObjectValues[1].Key.Type)
 	suite.Equal(`"num"`, tree.Root.ObjectValues[1].Key.Value)
-	suite.Equal(Number, tree.Root.ObjectValues[1].Value.Type)
+	suite.Equal(Integer, tree.Root.ObjectValues[1].Value.Type)
 	suite.Equal(`2`, tree.Root.ObjectValues[1].Value.Value)
 
 	suite.Equal(Object, tree.Root.ObjectValues[2].Value.Type)
 	em := tree.Root.ObjectValues[2].Value
 	suite.Len(em.ObjectValues, 3)
-	suite.Equal(Number, em.ObjectValues[0].Key.Type)
+	suite.Equal(Integer, em.ObjectValues[0].Key.Type)
 	suite.Equal(Bool, em.ObjectValues[0].Value.Type)
 	suite.Equal(`100`, em.ObjectValues[0].Key.Value)
 	suite.Equal(`true`, em.ObjectValues[0].Value.Value)
@@ -202,7 +202,7 @@ func (suite *JSONTreeTestSuite) TestDecodeArray() {
 	suite.Nil(err)
 	suite.Equal(Array, tree.Root.Type)
 	suite.Len(tree.Root.ArrayValues, 1)
-	suite.Equal(Number, tree.Root.ArrayValues[0].Type)
+	suite.Equal(Integer, tree.Root.ArrayValues[0].Type)
 	suite.Equal(`1`, tree.Root.ArrayValues[0].Value)
 }
 
@@ -223,6 +223,7 @@ func (suite *JSONTreeTestSuite) TestDecodeComplexJSON() {
 	// sales
 	sales := tree.Root.ObjectValues[1]
 	suite.Equal(`"sales"`, sales.Key.Value)
+	suite.Equal(Float, sales.Value.ArrayValues[1].ObjectValues[2].Value.Type)
 	suite.Equal("-1.2", sales.Value.ArrayValues[1].ObjectValues[2].Value.Value)
 	suite.Equal(`"Galley"`, sales.Value.ArrayValues[1].ObjectValues[1].Value.Value)
 }

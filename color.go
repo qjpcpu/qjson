@@ -9,6 +9,7 @@ import (
 	"github.com/fatih/color"
 )
 
+// PrettyMarshal marshal json with color
 func PrettyMarshal(v interface{}) []byte {
 	tree, err := Decode(JSONMarshalWithPanic(v))
 	if err != nil {
@@ -18,20 +19,30 @@ func PrettyMarshal(v interface{}) []byte {
 	return tree.ColorfulMarshal()
 }
 
+// Color type
 type Color int
 
 const (
+	// Yellow color
 	Yellow Color = iota + 1
+	// Cyan color
 	Cyan
+	// Green color
 	Green
+	// Magenta color
 	Magenta
+	// Blue color
 	Blue
+	// Red color
 	Red
+	// White color
 	White
+	// Black color
 	Black
 )
 
 var (
+	// MaxColorLevel max render level
 	MaxColorLevel = 3
 	colorFuncs    = []func(a ...interface{}) string{
 		func(e ...interface{}) string {
@@ -52,10 +63,12 @@ var (
 	}
 )
 
+// SetSelfColor set current node color
 func (n *Node) SetSelfColor(c Color) {
 	n.setColor(c, false)
 }
 
+// SetColor set color recursive
 func (n *Node) SetColor(c Color) {
 	n.setColor(c, true)
 }
@@ -72,7 +85,7 @@ func (n *Node) setLeveledColor(idx int) {
 		n.Color = c
 	case Bool:
 		n.Color = c
-	case Number:
+	case Integer, Float:
 		n.Color = c
 	case Object:
 		for i := range n.ObjectValues {
@@ -94,7 +107,7 @@ func (n *Node) setColor(c Color, recursive bool) {
 		n.Color = c
 	case Bool:
 		n.Color = c
-	case Number:
+	case Integer, Float:
 		n.Color = c
 	case Object:
 		if recursive {
@@ -117,6 +130,7 @@ func (n *Node) getColorFunc() func(...interface{}) string {
 	return colorFuncs[idx]
 }
 
+// JSONMarshalWithPanic json marshal with panic
 func JSONMarshalWithPanic(t interface{}) []byte {
 	if t == nil {
 		return nil
@@ -138,6 +152,7 @@ func JSONMarshalWithPanic(t interface{}) []byte {
 	return ret
 }
 
+// ColoredByLevel set leveled color
 func (t *JSONTree) ColoredByLevel() {
 	t.Root.setLeveledColor(1)
 }

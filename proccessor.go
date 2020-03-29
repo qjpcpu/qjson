@@ -32,6 +32,7 @@ const (
 	nullVal     = "null"
 	trueVal     = "true"
 	falseVal    = "false"
+	dotString   = "."
 	nullLen     = len(nullVal)
 	trueValLen  = len(trueVal)
 	falseValLen = len(falseVal)
@@ -64,7 +65,7 @@ func nextValueIsNumber(jsonBytes []byte, offset int) bool {
 		}
 	}
 	word := string(jsonBytes[start:offset])
-	if strings.Count(word, ".") > 1 {
+	if strings.Count(word, dotString) > 1 {
 		return false
 	}
 	return true

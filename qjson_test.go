@@ -32,7 +32,7 @@ func (suite *JSONTreeTestSuite) ValidJSON(data []byte) {
 	suite.compareTreeWithMap(m, tree.Root.ObjectValues)
 }
 
-func (suite *JSONTreeTestSuite) compareTreeWithArray(m []interface{}, elems []Node) {
+func (suite *JSONTreeTestSuite) compareTreeWithArray(m []interface{}, elems []*Node) {
 	suite.Equal(len(m), len(elems))
 	for i, item := range m {
 		tv := elems[i]
@@ -62,10 +62,10 @@ func (suite *JSONTreeTestSuite) compareTreeWithArray(m []interface{}, elems []No
 	}
 }
 
-func (suite *JSONTreeTestSuite) compareTreeWithMap(m map[string]interface{}, objectValues []ObjectElem) {
+func (suite *JSONTreeTestSuite) compareTreeWithMap(m map[string]interface{}, objectValues []*ObjectElem) {
 	suite.Equal(len(m), len(objectValues))
 	for k, v := range m {
-		var tv Node
+		var tv *Node
 		var found bool
 		for _, kv := range objectValues {
 			var str string
@@ -314,6 +314,11 @@ func (suite *JSONTreeTestSuite) TestWithStdLib() {
 		suite.Nil(err, "read test file %s", filename)
 		suite.ValidJSON(data)
 	}
+}
+
+func (suite *JSONTreeTestSuite) TestStringBytes() {
+	s := "hello"
+	suite.Equal("hello", bytesToString(stringToBytes(s)))
 }
 
 /* test JSON snippets */

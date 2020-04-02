@@ -20,7 +20,7 @@ func PrettyMarshal(v interface{}) []byte {
 }
 
 // Color type
-type Color int
+type Color byte
 
 const (
 	// Yellow color
@@ -80,13 +80,13 @@ func (n *Node) setLeveledColor(idx int) {
 	c := Color(idx % len(colorFuncs))
 	switch n.Type {
 	case Null:
-		n.Color = c
+		n.color = c
 	case String:
-		n.Color = c
+		n.color = c
 	case Bool:
-		n.Color = c
+		n.color = c
 	case Integer, Float:
-		n.Color = c
+		n.color = c
 	case Object:
 		for i := range n.ObjectValues {
 			n.ObjectValues[i].Key.setLeveledColor(idx)
@@ -102,13 +102,13 @@ func (n *Node) setLeveledColor(idx int) {
 func (n *Node) setColor(c Color, recursive bool) {
 	switch n.Type {
 	case Null:
-		n.Color = c
+		n.color = c
 	case String:
-		n.Color = c
+		n.color = c
 	case Bool:
-		n.Color = c
+		n.color = c
 	case Integer, Float:
-		n.Color = c
+		n.color = c
 	case Object:
 		if recursive {
 			for i := range n.ObjectValues {
@@ -126,7 +126,7 @@ func (n *Node) setColor(c Color, recursive bool) {
 }
 
 func (n *Node) getColorFunc() func(...interface{}) string {
-	idx := int(n.Color) % len(colorFuncs)
+	idx := int(n.color) % len(colorFuncs)
 	return colorFuncs[idx]
 }
 

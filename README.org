@@ -1,0 +1,31 @@
+* qjson
+simple and fast json encode/decode lib.
+
+** unmarshal json bytes to JSONTree
+
+#+begin_src
+tree,err := Decode([]byte(`{"a":1}`))
+// or
+tree := JSONTree{}
+err := json.Unmarshal([]byte(`{"a":1}`),&tree)
+#+end_src
+
+** marshal JSONTree to bytes
+
+#+begin_src
+err := json.Marshal(tree)
+#+end_src
+
+** benchmark
+
+#+begin_src 
+goos: darwin
+goarch: amd64
+pkg: github.com/qjpcpu/qjson
+BenchmarkUnmarshal-12              83077             13656 ns/op           10656 B/op        216 allocs/op
+BenchmarkUnmarshalStd-12           58548             20253 ns/op            9352 B/op        200 allocs/op
+BenchmarkMarshal-12                76896             16121 ns/op            8638 B/op        159 allocs/op
+BenchmarkMarshalStd-12             47878             24164 ns/op           10150 B/op        215 allocs/op
+PASS
+ok      github.com/qjpcpu/qjson 5.680s
+#+end_src

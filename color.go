@@ -19,9 +19,6 @@ func PrettyMarshal(v interface{}) []byte {
 	return tree.ColorfulMarshal()
 }
 
-// Color type
-type Color byte
-
 const (
 	// Yellow color
 	Yellow Color = iota + 1
@@ -62,6 +59,11 @@ var (
 		color.New(color.FgBlack, color.BgWhite).SprintFunc(),
 	}
 )
+
+// ColorfulMarshal print json with color
+func (t *JSONTree) ColorfulMarshal() []byte {
+	return t.Root.marshalWithColor()
+}
 
 // SetSelfColor set current node color
 func (n *Node) SetSelfColor(c Color) {
@@ -128,6 +130,63 @@ func (n *Node) setColor(c Color, recursive bool) {
 func (n *Node) getColorFunc() func(...interface{}) string {
 	idx := int(n.color) % len(colorFuncs)
 	return colorFuncs[idx]
+}
+
+func (n *Node) marshalWithColor() []byte {
+	fn := n.getColorFunc()
+	buf := bytesPool.Get().(*bytes.Buffer)
+	buf.Reset()
+	defer bytesPool.Put(buf)
+	switch n.Type {
+	case Null:
+		buf.WriteString(fn(nullVal))
+	case String:
+		buf.WriteByte(quote)
+		buf.WriteString(fn(n.Value[1 : len(n.Value)-1]))
+		buf.WriteByte(quote)
+	case Bool:
+		if n.Value == trueVal {
+			buf.WriteString(fn(trueVal))
+		} else {
+			buf.WriteString(fn(falseVal))
+		}
+	case Integer, Float:
+		buf.WriteString(fn(n.Value))
+	case Object:
+		buf.WriteByte(objectStart)
+		for i, elem := range n.ObjectValues {
+			v := elem.marshalWithColor()
+			buf.Write(v)
+			if i < len(n.ObjectValues)-1 {
+				buf.WriteByte(commaChar)
+			}
+		}
+		buf.WriteByte(objectEnd)
+	case Array:
+		buf.WriteByte(arrayStart)
+		for i, elem := range n.ArrayValues {
+			v := elem.marshalWithColor()
+			buf.Write(v)
+			if i < len(n.ArrayValues)-1 {
+				buf.WriteByte(commaChar)
+			}
+		}
+		buf.WriteByte(arrayEnd)
+	}
+	return stringToBytes(buf.String())
+}
+
+func (e ObjectElem) marshalWithColor() []byte {
+	buf := bytesPool.Get().(*bytes.Buffer)
+	buf.Reset()
+	defer bytesPool.Put(buf)
+	key := e.Key.marshalWithColor()
+	val := e.Value.marshalWithColor()
+
+	buf.Write(key)
+	buf.WriteByte(colonChar)
+	buf.Write(val)
+	return stringToBytes(buf.String())
 }
 
 // JSONMarshalWithPanic json marshal with panic

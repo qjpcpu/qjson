@@ -2,6 +2,9 @@ package qjson
 
 import (
 	"bytes"
+	sysjson "encoding/json"
+	"fmt"
+	"strconv"
 )
 
 // NodeType describe a json node type
@@ -23,6 +26,9 @@ const (
 	// Array json node means array json nodes
 	Array
 )
+
+// Color type
+type Color byte
 
 // Node represent json node
 type Node struct {
@@ -68,6 +74,82 @@ func (n *Node) AsTree() *JSONTree {
 	return tree
 }
 
+// AsMap create map for chilren
+func (n *Node) AsMap() map[string]*Node {
+	if n.Type != Null && n.Type != Object {
+		panic("node type should be object")
+	}
+	m := make(map[string]*Node)
+	for i, kv := range n.ObjectValues {
+		var o interface{}
+		sysjson.Unmarshal([]byte(kv.Key.Value), &o)
+		m[fmt.Sprint(o)] = n.ObjectValues[i].Value
+	}
+	return m
+}
+
+// AsString as string
+func (n *Node) AsString() string {
+	switch n.Type {
+	case String:
+		var s string
+		sysjson.Unmarshal([]byte(n.Value), &s)
+		return s
+	case Bool:
+		if n.Value == trueVal {
+			return trueVal
+		}
+		return falseVal
+	case Integer, Float:
+		return n.Value
+	}
+	panic("node type should be simple value")
+}
+
+// AsBool as boolean
+func (n *Node) AsBool() bool {
+	if n.Type != Bool {
+		panic("node type should be bool value")
+	}
+	return n.Value == trueVal
+}
+
+// AsInt as integer
+func (n *Node) AsInt() int64 {
+	if n.Type != Integer {
+		panic("node type should be integer value")
+	}
+	i, err := strconv.ParseInt(n.Value, 10, 64)
+	if err != nil {
+		panic(err)
+	}
+	return i
+}
+
+// AsUint as unsigned integer
+func (n *Node) AsUint() uint64 {
+	if n.Type != Integer {
+		panic("node type should be unsigned integer value")
+	}
+	i, err := strconv.ParseUint(n.Value, 10, 64)
+	if err != nil {
+		panic(err)
+	}
+	return i
+}
+
+// AsFloat as float64
+func (n *Node) AsFloat() float64 {
+	if n.Type != Integer {
+		panic("node type should be float value")
+	}
+	i, err := strconv.ParseFloat(n.Value, 64)
+	if err != nil {
+		panic(err)
+	}
+	return i
+}
+
 // JSONTree represent full json
 type JSONTree struct {
 	Root Node
@@ -95,60 +177,12 @@ func (t *JSONTree) UnmarshalJSON(data []byte) (err error) {
 	return
 }
 
-// ColorfulMarshal print json with color
-func (t *JSONTree) ColorfulMarshal() []byte {
-	return t.Root.marshalWithColor()
-}
-
 /* tree generator */
 func makeNewTree() *JSONTree {
 	return &JSONTree{}
 }
 
 /* marshalers */
-func (n *Node) marshalWithColor() []byte {
-	fn := n.getColorFunc()
-	buf := bytesPool.Get().(*bytes.Buffer)
-	buf.Reset()
-	defer bytesPool.Put(buf)
-	switch n.Type {
-	case Null:
-		buf.WriteString(fn(nullVal))
-	case String:
-		buf.WriteByte(quote)
-		buf.WriteString(fn(n.Value[1 : len(n.Value)-1]))
-		buf.WriteByte(quote)
-	case Bool:
-		if n.Value == trueVal {
-			buf.WriteString(fn(trueVal))
-		} else {
-			buf.WriteString(fn(falseVal))
-		}
-	case Integer, Float:
-		buf.WriteString(fn(n.Value))
-	case Object:
-		buf.WriteByte(objectStart)
-		for i, elem := range n.ObjectValues {
-			v := elem.marshalWithColor()
-			buf.Write(v)
-			if i < len(n.ObjectValues)-1 {
-				buf.WriteByte(commaChar)
-			}
-		}
-		buf.WriteByte(objectEnd)
-	case Array:
-		buf.WriteByte(arrayStart)
-		for i, elem := range n.ArrayValues {
-			v := elem.marshalWithColor()
-			buf.Write(v)
-			if i < len(n.ArrayValues)-1 {
-				buf.WriteByte(commaChar)
-			}
-		}
-		buf.WriteByte(arrayEnd)
-	}
-	return stringToBytes(buf.String())
-}
 
 // MarshalJSON node is json marshaller too
 func (n *Node) MarshalJSON() ([]byte, error) {
@@ -197,19 +231,6 @@ func (n *Node) MarshalJSON() ([]byte, error) {
 		buf.WriteByte(arrayEnd)
 	}
 	return stringToBytes(buf.String()), err
-}
-
-func (e ObjectElem) marshalWithColor() []byte {
-	buf := bytesPool.Get().(*bytes.Buffer)
-	buf.Reset()
-	defer bytesPool.Put(buf)
-	key := e.Key.marshalWithColor()
-	val := e.Value.marshalWithColor()
-
-	buf.Write(key)
-	buf.WriteByte(colonChar)
-	buf.Write(val)
-	return stringToBytes(buf.String())
 }
 
 // MarshalJSON object node is json marshaller

@@ -70,7 +70,7 @@ func (n *Node) IsNull() bool {
 // AsTree create sub json tree
 func (n *Node) AsTree() *JSONTree {
 	tree := makeNewTree()
-	tree.Root = *n
+	tree.Root = n
 	return tree
 }
 
@@ -93,7 +93,9 @@ func (n *Node) AsString() string {
 	switch n.Type {
 	case String:
 		var s string
-		sysjson.Unmarshal([]byte(n.Value), &s)
+		if err := sysjson.Unmarshal([]byte(n.Value), &s); err != nil {
+			panic(err)
+		}
 		return s
 	case Bool:
 		if n.Value == trueVal {
@@ -152,7 +154,7 @@ func (n *Node) AsFloat() float64 {
 
 // JSONTree represent full json
 type JSONTree struct {
-	Root Node
+	Root *Node
 }
 
 /* tree methods */
@@ -179,7 +181,7 @@ func (t *JSONTree) UnmarshalJSON(data []byte) (err error) {
 
 /* tree generator */
 func makeNewTree() *JSONTree {
-	return &JSONTree{}
+	return &JSONTree{Root: createNode()}
 }
 
 /* marshalers */

@@ -328,6 +328,17 @@ func (suite *JSONTreeTestSuite) TestStringBytes() {
 	suite.Equal("hello", bytesToString(stringToBytes(s)))
 }
 
+func (suite *JSONTreeTestSuite) TestRelease() {
+	suite.Zero(nodeQueue.Quantity())
+	tree := &JSONTree{}
+	err := json.Unmarshal([]byte(text3), tree)
+	suite.Nil(err)
+	suite.NotNil(tree.Root)
+	tree.Release()
+	suite.Nil(tree.Root)
+	suite.NotZero(nodeQueue.Quantity())
+}
+
 /* test JSON snippets */
 var (
 	text1 = ` 

@@ -22,10 +22,10 @@ err := json.Marshal(tree)
 goos: darwin
 goarch: amd64
 pkg: github.com/qjpcpu/qjson
-BenchmarkUnmarshal-12              83077             13656 ns/op           10656 B/op        216 allocs/op
-BenchmarkUnmarshalStd-12           58548             20253 ns/op            9352 B/op        200 allocs/op
-BenchmarkMarshal-12                76896             16121 ns/op            8638 B/op        159 allocs/op
-BenchmarkMarshalStd-12             47878             24164 ns/op           10150 B/op        215 allocs/op
+BenchmarkUnmarshal-12             161134              7366 ns/op               8 B/op          1 allocs/op
+BenchmarkUnmarshalStd-12           53988             21761 ns/op            9352 B/op        200 allocs/op
+BenchmarkMarshal-12                73990             16312 ns/op            8641 B/op        159 allocs/op
+BenchmarkMarshalStd-12             50682             22141 ns/op           10151 B/op        215 allocs/op
 PASS
-ok      github.com/qjpcpu/qjson 5.680s
+ok      github.com/qjpcpu/qjson 6.098s
 #+end_src

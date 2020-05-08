@@ -38,9 +38,8 @@ const (
 	nullLen     = len(nullVal)
 	trueValLen  = len(trueVal)
 	falseValLen = len(falseVal)
+	emptyVal    = ""
 )
-
-const defaultSliceCap = 2
 
 /* decode json entry function */
 func decodeAny(jsonBytes []byte, offset int, tree *JSONTree) (int, error) {
@@ -50,17 +49,17 @@ func decodeAny(jsonBytes []byte, offset int, tree *JSONTree) (int, error) {
 
 	var err error
 	if nextValueIsObject(jsonBytes, offset) {
-		offset, err = fillObjectNode(jsonBytes, offset, &tree.Root)
+		offset, err = fillObjectNode(jsonBytes, offset, tree.Root)
 	} else if nextValueIsArray(jsonBytes, offset) {
-		offset, err = fillArrayNode(jsonBytes, offset, &tree.Root)
+		offset, err = fillArrayNode(jsonBytes, offset, tree.Root)
 	} else if nextValueIsNull(jsonBytes, offset) {
-		offset = fillNullNode(jsonBytes, offset, &tree.Root)
+		offset = fillNullNode(jsonBytes, offset, tree.Root)
 	} else if nextValueIsBool(jsonBytes, offset) {
-		offset = fillBoolNode(jsonBytes, offset, &tree.Root)
+		offset = fillBoolNode(jsonBytes, offset, tree.Root)
 	} else if nextValueIsNumber(jsonBytes, offset) {
-		offset = fillNumberNode(jsonBytes, offset, &tree.Root)
+		offset = fillNumberNode(jsonBytes, offset, tree.Root)
 	} else if nextValueIsString(jsonBytes, offset) {
-		offset = fillStringNode(jsonBytes, offset, &tree.Root)
+		offset = fillStringNode(jsonBytes, offset, tree.Root)
 	} else {
 		err = fmt.Errorf("unknown json char %s", jsonBytes[offset:])
 	}
@@ -76,7 +75,6 @@ func decodeAny(jsonBytes []byte, offset int, tree *JSONTree) (int, error) {
 
 func fillObjectNode(jsonBytes []byte, offset int, node *Node) (int, error) {
 	node.Type = Object
-	node.ObjectValues = make([]*ObjectElem, 0, defaultSliceCap)
 	offset++
 	for {
 		if noffset := searchFirstValidChar(jsonBytes, offset); noffset == -1 {
@@ -91,7 +89,11 @@ func fillObjectNode(jsonBytes []byte, offset int, node *Node) (int, error) {
 			offset = noffset
 		}
 		var err error
-		elem := &ObjectElem{Key: new(Node), Value: new(Node)}
+
+		elem := createObject()
+		elem.Key = createNode()
+		elem.Value = createNode()
+
 		if nextValueIsBool(jsonBytes, offset) {
 			offset = fillBoolNode(jsonBytes, offset, elem.Key)
 		} else if nextValueIsNumber(jsonBytes, offset) {
@@ -134,7 +136,6 @@ func fillObjectNode(jsonBytes []byte, offset int, node *Node) (int, error) {
 
 func fillArrayNode(jsonBytes []byte, offset int, node *Node) (int, error) {
 	node.Type = Array
-	node.ArrayValues = make([]*Node, 0, defaultSliceCap)
 	offset++
 	for {
 		if noffset := searchFirstValidChar(jsonBytes, offset); noffset == -1 {
@@ -149,7 +150,7 @@ func fillArrayNode(jsonBytes []byte, offset int, node *Node) (int, error) {
 			offset = noffset
 		}
 		var err error
-		elem := &Node{}
+		elem := createNode()
 		if nextValueIsBool(jsonBytes, offset) {
 			offset = fillBoolNode(jsonBytes, offset, elem)
 		} else if nextValueIsNumber(jsonBytes, offset) {

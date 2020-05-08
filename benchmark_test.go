@@ -7,8 +7,10 @@ import (
 
 func BenchmarkUnmarshal(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		if _, err := Decode(textTpl); err != nil {
+		if tree, err := Decode(textTpl); err != nil {
 			b.Fatal(err)
+		} else {
+			tree.Release()
 		}
 	}
 }

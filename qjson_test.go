@@ -1,6 +1,7 @@
 package qjson
 
 import (
+	"bytes"
 	"io/ioutil"
 	"testing"
 
@@ -271,6 +272,27 @@ func (suite *JSONTreeTestSuite) TestColorMarshal() {
 
 func (suite *JSONTreeTestSuite) TestDecodeComplexJSONWithFloat() {
 	tree, err := Decode([]byte(text3))
+	suite.Nil(err)
+
+	suite.Equal(`"content"`, tree.Root.ObjectValues[0].Key.Value)
+	suite.Equal(`"edd05471-7823-5d38-8a7c-e60d763c3001"`, tree.Root.ObjectValues[2].Value.Value)
+	suite.Equal(`"1234567"`, tree.Root.ObjectValues[1].Value.ArrayValues[0].Value)
+	suite.Equal(`1`, tree.Root.ObjectValues[1].Value.ArrayValues[1].Value)
+	suite.Equal(`1.2`, tree.Root.ObjectValues[1].Value.ArrayValues[2].Value)
+	suite.Equal(`-100.2`, tree.Root.ObjectValues[1].Value.ArrayValues[3].Value)
+	suite.Equal(`false`, tree.Root.ObjectValues[1].Value.ArrayValues[4].Value)
+	suite.Equal(`null`, tree.Root.ObjectValues[1].Value.ArrayValues[5].Value)
+
+	m := make(map[string]interface{})
+	json.Unmarshal([]byte(text3), &m)
+	var s string
+	json.Unmarshal([]byte(tree.Root.ObjectValues[0].Value.Value), &s)
+	suite.Equal(m["content"].(string), s)
+}
+
+func (suite *JSONTreeTestSuite) TestDecodeUseStdDecoder() {
+	tree := &JSONTree{}
+	err := json.NewDecoder(bytes.NewBuffer([]byte(text3))).Decode(tree)
 	suite.Nil(err)
 
 	suite.Equal(`"content"`, tree.Root.ObjectValues[0].Key.Value)

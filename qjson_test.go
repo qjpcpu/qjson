@@ -190,12 +190,14 @@ func (suite *JSONTreeTestSuite) TestValidateObject() {
 	bytes := []byte(`{"hello":"world","num":2,"em":{"100":true,"lang":"golang", "other": null}}`)
 	suite.ValidJSON(bytes)
 }
+
 func (suite *JSONTreeTestSuite) TestObjectToMap() {
 	bytes := []byte(`{"hello":"world","num":2,"em":{"100":true,"lang":"golang", "other": null}}`)
 	tree, err := Decode(bytes)
 	suite.Nil(err)
 	m := tree.Root.AsMap()
 	suite.Equal(`"world"`, m[`hello`].Value)
+	suite.Equal(`2`, m[`num`].Value)
 }
 
 func (suite *JSONTreeTestSuite) TestDecodeArray() {

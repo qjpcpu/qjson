@@ -3,7 +3,6 @@ package qjson
 import (
 	"bytes"
 	sysjson "encoding/json"
-	"fmt"
 	"strconv"
 )
 
@@ -81,9 +80,7 @@ func (n *Node) AsMap() map[string]*Node {
 	}
 	m := make(map[string]*Node)
 	for i, kv := range n.ObjectValues {
-		var o interface{}
-		sysjson.Unmarshal([]byte(kv.Key.Value), &o)
-		m[fmt.Sprint(o)] = n.ObjectValues[i].Value
+		m[kv.Key.AsString()] = n.ObjectValues[i].Value
 	}
 	return m
 }

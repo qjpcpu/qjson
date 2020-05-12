@@ -352,6 +352,21 @@ func (suite *JSONTreeTestSuite) TestStringBytes() {
 	suite.Equal("hello", bytesToString(stringToBytes(s)))
 }
 
+func (suite *JSONTreeTestSuite) TestStringEncoderDecoder() {
+	s := `"hello' " \n = \r`
+	m1 := MarshalString([]byte(s))
+	m2, err := json.Marshal(s)
+	suite.Nil(err)
+	suite.Equal(string(m1), string(m2))
+
+	m3, err := UnmarshalString(m1)
+	suite.Nil(err)
+	var s1 string
+	json.Unmarshal(m1, &s1)
+	suite.Equal(s1, string(m3))
+	suite.Equal(s1, s)
+}
+
 func (suite *JSONTreeTestSuite) TestRelease() {
 	suite.Zero(nodeQueue.Quantity())
 	tree := &JSONTree{}

@@ -2,7 +2,6 @@ package qjson
 
 import (
 	"bytes"
-	sysjson "encoding/json"
 	"strconv"
 )
 
@@ -89,11 +88,11 @@ func (n *Node) AsMap() map[string]*Node {
 func (n *Node) AsString() string {
 	switch n.Type {
 	case String:
-		var s string
-		if err := sysjson.Unmarshal([]byte(n.Value), &s); err != nil {
+		s, err := UnmarshalString([]byte(n.Value))
+		if err != nil {
 			panic(err)
 		}
-		return s
+		return string(s)
 	case Bool:
 		if n.Value == trueVal {
 			return trueVal

@@ -43,8 +43,8 @@ func CreateNode() *Node {
 	return &Node{}
 }
 
-// CreateObject by pool
-func CreateObject() *ObjectElem {
+// CreateObjectElem by pool
+func CreateObjectElem() *ObjectElem {
 	if v, ok := objectQueue.Get(); ok {
 		object := v.(*ObjectElem)
 		if object.Key != nil {

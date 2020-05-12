@@ -34,3 +34,52 @@ func bytesToString(b []byte) string {
 func isIntegerChar(b byte) bool {
 	return b >= '0' && b <= '9'
 }
+
+// CreateObjectNode create object node
+func CreateObjectNode() *Node {
+	node := CreateNode()
+	node.Type = Object
+	return node
+}
+
+// CreateArrayNode create array node
+func CreateArrayNode() *Node {
+	node := CreateNode()
+	node.Type = Array
+	return node
+}
+
+// CreateBoolNode create bool node
+func CreateBoolNode() *Node {
+	node := CreateNode()
+	node.Type = Bool
+	return node
+}
+
+// CreateStringNode create string node
+func CreateStringNode() *Node {
+	node := CreateNode()
+	node.Type = String
+	return node
+}
+
+// CreateStringNodeWithValue create string node
+func CreateStringNodeWithValue(val string) *Node {
+	node := CreateStringNode()
+	node.Value = bytesToString(MarshalString([]byte(val)))
+	return node
+}
+
+// CreateIntegerNode create integer node
+func CreateIntegerNode() *Node {
+	node := CreateNode()
+	node.Type = Integer
+	return node
+}
+
+// CreateFloatNode create float node
+func CreateFloatNode() *Node {
+	node := CreateNode()
+	node.Type = Float
+	return node
+}

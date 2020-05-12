@@ -90,7 +90,7 @@ func fillObjectNode(jsonBytes []byte, offset int, node *Node) (int, error) {
 		}
 		var err error
 
-		elem := CreateObject()
+		elem := CreateObjectElem()
 		elem.Key = CreateNode()
 		elem.Value = CreateNode()
 

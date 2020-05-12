@@ -503,3 +503,28 @@ var (
   "changesets": "[]"
 }`
 )
+
+func (suite *JSONTreeTestSuite) TestCreateObjectNode() {
+	tree := makeNewTree()
+	tree.Root = CreateObjectNode()
+	tree.Root.SetObjectStringElem("KEY", "VAL")
+	tree.Root.SetObjectBoolElem("KEY1", true)
+	tree.Root.SetObjectIntElem("KEY2", 12)
+	ret := string(JSONMarshalWithPanic(tree))
+	suite.Equal(`{"KEY":"VAL","KEY1":true,"KEY2":12}`, ret)
+	suite.Equal("VAL", tree.Root.FindNodeByKey("KEY").AsString())
+
+	tree.Root.SetObjectBoolElem("KEY2", false)
+	ret = string(JSONMarshalWithPanic(tree))
+	suite.Equal(`{"KEY":"VAL","KEY1":true,"KEY2":false}`, ret)
+}
+
+func (suite *JSONTreeTestSuite) TestIsXXX() {
+	suite.True(CreateNode().IsNull())
+	suite.True(CreateStringNode().IsString())
+	suite.True(CreateIntegerNode().IsInteger())
+	suite.True(CreateFloatNode().IsFloat())
+	suite.True(CreateBoolNode().IsBool())
+	suite.True(CreateIntegerNode().IsNumber())
+	suite.True(CreateFloatNode().IsNumber())
+}

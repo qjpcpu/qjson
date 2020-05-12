@@ -2,6 +2,7 @@ package qjson
 
 import (
 	"bytes"
+	"encoding/json"
 	"strconv"
 )
 
@@ -58,6 +59,15 @@ func Decode(jsonBytes []byte) (*JSONTree, error) {
 	return tree, nil
 }
 
+// ConvertToJSONTree any object to json tree
+func ConvertToJSONTree(obj interface{}) (*JSONTree, error) {
+	data, err := json.Marshal(obj)
+	if err != nil {
+		return nil, err
+	}
+	return Decode(data)
+}
+
 /* node methods */
 
 // IsNull tell node is null or not
@@ -65,11 +75,129 @@ func (n *Node) IsNull() bool {
 	return n.Type == Null
 }
 
+// IsString tell node is string or not
+func (n *Node) IsString() bool {
+	return n.Type == String
+}
+
+// IsBool tell node is boolean or not
+func (n *Node) IsBool() bool {
+	return n.Type == Bool
+}
+
+// IsInteger tell node is num or not
+func (n *Node) IsInteger() bool {
+	return n.Type == Integer
+}
+
+// IsFloat tell node is float or not
+func (n *Node) IsFloat() bool {
+	return n.Type == Float
+}
+
+// IsNumber tell node is number or not
+func (n *Node) IsNumber() bool {
+	return n.IsFloat() || n.IsInteger()
+}
+
 // AsTree create sub json tree
 func (n *Node) AsTree() *JSONTree {
 	tree := makeNewTree()
 	tree.Root = n
 	return tree
+}
+
+// FindNodeByKey find object value by key
+func (n *Node) FindNodeByKey(key string) *Node {
+	if elem := n.FindObjectElemByKey(key); elem != nil {
+		return elem.Value
+	}
+	return nil
+}
+
+// FindObjectElemByKey find object value by key
+func (n *Node) FindObjectElemByKey(key string) *ObjectElem {
+	if n.Type != Null && n.Type != Object {
+		panic("node type should be object")
+	}
+	for i, kv := range n.ObjectValues {
+		if kv.Key.AsString() == key {
+			return n.ObjectValues[i]
+		}
+	}
+	return nil
+}
+
+// SetObjectStringElem set kv pair
+func (n *Node) SetObjectStringElem(key, value string) {
+	for _, elem := range n.ObjectValues {
+		if elem.Key.AsString() == key {
+			elem.Value.Type = String
+			elem.Value.Value = bytesToString(MarshalString([]byte(value)))
+			return
+		}
+	}
+	elem := CreateObjectElem()
+	elem.Key = CreateStringNode()
+	elem.Key.Value = bytesToString(MarshalString([]byte(key)))
+	elem.Value = CreateStringNode()
+	elem.Value.Value = bytesToString(MarshalString([]byte(value)))
+	n.ObjectValues = append(n.ObjectValues, elem)
+}
+
+// SetObjectIntElem set kv pair
+func (n *Node) SetObjectIntElem(key string, value int64) {
+	for _, elem := range n.ObjectValues {
+		if elem.Key.AsString() == key {
+			elem.Value.Type = Integer
+			elem.Value.Value = strconv.FormatInt(value, 10)
+			return
+		}
+	}
+	elem := CreateObjectElem()
+	elem.Key = CreateStringNode()
+	elem.Key.Value = bytesToString(MarshalString([]byte(key)))
+	elem.Value = CreateIntegerNode()
+	elem.Value.Value = strconv.FormatInt(value, 10)
+	n.ObjectValues = append(n.ObjectValues, elem)
+}
+
+// SetObjectUintElem set kv pair
+func (n *Node) SetObjectUintElem(key string, value uint64) {
+	for _, elem := range n.ObjectValues {
+		if elem.Key.AsString() == key {
+			elem.Value.Type = Integer
+			elem.Value.Value = strconv.FormatUint(value, 10)
+			return
+		}
+	}
+	elem := CreateObjectElem()
+	elem.Key = CreateStringNode()
+	elem.Key.Value = bytesToString(MarshalString([]byte(key)))
+	elem.Value = CreateIntegerNode()
+	elem.Value.Value = strconv.FormatUint(value, 10)
+	n.ObjectValues = append(n.ObjectValues, elem)
+}
+
+// SetObjectBoolElem set kv pair
+func (n *Node) SetObjectBoolElem(key string, value bool) {
+	val := falseVal
+	if value {
+		val = trueVal
+	}
+	for _, elem := range n.ObjectValues {
+		if elem.Key.AsString() == key {
+			elem.Value.Type = Bool
+			elem.Value.Value = val
+			return
+		}
+	}
+	elem := CreateObjectElem()
+	elem.Key = CreateStringNode()
+	elem.Key.Value = bytesToString(MarshalString([]byte(key)))
+	elem.Value = CreateBoolNode()
+	elem.Value.Value = val
+	n.ObjectValues = append(n.ObjectValues, elem)
 }
 
 // AsMap create map for chilren
@@ -82,6 +210,40 @@ func (n *Node) AsMap() map[string]*Node {
 		m[kv.Key.AsString()] = n.ObjectValues[i].Value
 	}
 	return m
+}
+
+// SetRawValue to node
+func (n *Node) SetRawValue(str string) *Node {
+	n.Value = str
+	return n
+}
+
+// SetString to string node
+func (n *Node) SetString(str string) *Node {
+	n.Value = bytesToString(MarshalString([]byte(str)))
+	return n
+}
+
+// SetBool to node
+func (n *Node) SetBool(b bool) *Node {
+	if b {
+		n.Value = trueVal
+	} else {
+		n.Value = falseVal
+	}
+	return n
+}
+
+// SetInt to node
+func (n *Node) SetInt(num int64) *Node {
+	n.Value = strconv.FormatInt(num, 10)
+	return n
+}
+
+// SetUnt to node
+func (n *Node) SetUint(num uint64) *Node {
+	n.Value = strconv.FormatUint(num, 10)
+	return n
 }
 
 // AsString as string

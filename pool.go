@@ -15,7 +15,8 @@ func (tree *JSONTree) Release() {
 	*v = nil
 }
 
-func createNode() *Node {
+// CreateNode by pool
+func CreateNode() *Node {
 	if v, ok := nodeQueue.Get(); ok {
 		node := v.(*Node)
 		if node.Type == Object {
@@ -41,7 +42,8 @@ func createNode() *Node {
 	return &Node{}
 }
 
-func createObject() *ObjectElem {
+// CreateObject by pool
+func CreateObject() *ObjectElem {
 	if v, ok := objectQueue.Get(); ok {
 		object := v.(*ObjectElem)
 		if object.Key != nil {

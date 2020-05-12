@@ -90,9 +90,9 @@ func fillObjectNode(jsonBytes []byte, offset int, node *Node) (int, error) {
 		}
 		var err error
 
-		elem := createObject()
-		elem.Key = createNode()
-		elem.Value = createNode()
+		elem := CreateObject()
+		elem.Key = CreateNode()
+		elem.Value = CreateNode()
 
 		if nextValueIsBool(jsonBytes, offset) {
 			offset = fillBoolNode(jsonBytes, offset, elem.Key)
@@ -150,7 +150,7 @@ func fillArrayNode(jsonBytes []byte, offset int, node *Node) (int, error) {
 			offset = noffset
 		}
 		var err error
-		elem := createNode()
+		elem := CreateNode()
 		if nextValueIsBool(jsonBytes, offset) {
 			offset = fillBoolNode(jsonBytes, offset, elem)
 		} else if nextValueIsNumber(jsonBytes, offset) {

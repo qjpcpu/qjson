@@ -177,7 +177,7 @@ func (t *JSONTree) UnmarshalJSON(data []byte) (err error) {
 
 /* tree generator */
 func makeNewTree() *JSONTree {
-	return &JSONTree{Root: createNode()}
+	return &JSONTree{Root: CreateNode()}
 }
 
 /* marshalers */

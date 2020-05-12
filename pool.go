@@ -9,10 +9,11 @@ var (
 
 // Release json tree for objects reuse
 func (tree *JSONTree) Release() {
-	node := tree.Root
-	nodeQueue.Put(node)
-	v := &tree.Root
-	*v = nil
+	if node := tree.Root; node != nil {
+		nodeQueue.Put(node)
+		v := &tree.Root
+		*v = nil
+	}
 }
 
 // CreateNode by pool

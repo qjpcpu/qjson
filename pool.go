@@ -1,5 +1,10 @@
 package qjson
 
+import (
+	"sync/atomic"
+	"unsafe"
+)
+
 const defaultQueueSize = 256
 
 var (
@@ -10,9 +15,9 @@ var (
 // Release json tree for objects reuse
 func (tree *JSONTree) Release() {
 	if node := tree.Root; node != nil {
-		nodeQueue.Put(node)
-		v := &tree.Root
-		*v = nil
+		if atomic.CompareAndSwapPointer((*unsafe.Pointer)((unsafe.Pointer)(&tree.Root)), unsafe.Pointer(node), unsafe.Pointer(nil)) {
+			nodeQueue.Put(node)
+		}
 	}
 }
 

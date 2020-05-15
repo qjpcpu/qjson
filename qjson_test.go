@@ -375,7 +375,10 @@ func (suite *JSONTreeTestSuite) TestRelease() {
 	suite.NotNil(tree.Root)
 	tree.Release()
 	suite.Nil(tree.Root)
-	suite.NotZero(nodeQueue.Quantity())
+	suite.Equal(uint32(1), nodeQueue.Quantity())
+	tree.Release()
+	suite.Nil(tree.Root)
+	suite.Equal(uint32(1), nodeQueue.Quantity())
 }
 
 /* test JSON snippets */

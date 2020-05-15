@@ -200,6 +200,21 @@ func (n *Node) SetObjectBoolElem(key string, value bool) {
 	n.ObjectValues = append(n.ObjectValues, elem)
 }
 
+// SetObjectNodeElem set kv pair
+func (n *Node) SetObjectNodeElem(key string, value *Node) {
+	for _, elem := range n.ObjectValues {
+		if elem.Key.AsString() == key {
+			elem.Value = value
+			return
+		}
+	}
+	elem := CreateObjectElem()
+	elem.Key = CreateStringNode()
+	elem.Key.Value = bytesToString(MarshalString([]byte(key)))
+	elem.Value = value
+	n.ObjectValues = append(n.ObjectValues, elem)
+}
+
 // AsMap create map for chilren
 func (n *Node) AsMap() map[string]*Node {
 	if n.Type != Null && n.Type != Object {
@@ -319,7 +334,7 @@ type JSONTree struct {
 
 // IsNull tell node is null or not
 func (t *JSONTree) IsNull() bool {
-	return t.Root.IsNull()
+	return t.Root == nil || t.Root.IsNull()
 }
 
 // MarshalJSON json marshaller

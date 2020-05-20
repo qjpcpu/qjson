@@ -129,12 +129,12 @@ func (n *Node) FindObjectElemByKey(key string) *ObjectElem {
 }
 
 // SetObjectStringElem set kv pair
-func (n *Node) SetObjectStringElem(key, value string) {
+func (n *Node) SetObjectStringElem(key, value string) *Node {
 	for _, elem := range n.ObjectValues {
 		if elem.Key.AsString() == key {
 			elem.Value.Type = String
 			elem.Value.Value = bytesToString(MarshalString([]byte(value)))
-			return
+			return n
 		}
 	}
 	elem := CreateObjectElem()
@@ -143,15 +143,16 @@ func (n *Node) SetObjectStringElem(key, value string) {
 	elem.Value = CreateStringNode()
 	elem.Value.Value = bytesToString(MarshalString([]byte(value)))
 	n.ObjectValues = append(n.ObjectValues, elem)
+	return n
 }
 
 // SetObjectIntElem set kv pair
-func (n *Node) SetObjectIntElem(key string, value int64) {
+func (n *Node) SetObjectIntElem(key string, value int64) *Node {
 	for _, elem := range n.ObjectValues {
 		if elem.Key.AsString() == key {
 			elem.Value.Type = Integer
 			elem.Value.Value = strconv.FormatInt(value, 10)
-			return
+			return n
 		}
 	}
 	elem := CreateObjectElem()
@@ -160,15 +161,16 @@ func (n *Node) SetObjectIntElem(key string, value int64) {
 	elem.Value = CreateIntegerNode()
 	elem.Value.Value = strconv.FormatInt(value, 10)
 	n.ObjectValues = append(n.ObjectValues, elem)
+	return n
 }
 
 // SetObjectUintElem set kv pair
-func (n *Node) SetObjectUintElem(key string, value uint64) {
+func (n *Node) SetObjectUintElem(key string, value uint64) *Node {
 	for _, elem := range n.ObjectValues {
 		if elem.Key.AsString() == key {
 			elem.Value.Type = Integer
 			elem.Value.Value = strconv.FormatUint(value, 10)
-			return
+			return n
 		}
 	}
 	elem := CreateObjectElem()
@@ -177,10 +179,11 @@ func (n *Node) SetObjectUintElem(key string, value uint64) {
 	elem.Value = CreateIntegerNode()
 	elem.Value.Value = strconv.FormatUint(value, 10)
 	n.ObjectValues = append(n.ObjectValues, elem)
+	return n
 }
 
 // SetObjectBoolElem set kv pair
-func (n *Node) SetObjectBoolElem(key string, value bool) {
+func (n *Node) SetObjectBoolElem(key string, value bool) *Node {
 	val := falseVal
 	if value {
 		val = trueVal
@@ -189,7 +192,7 @@ func (n *Node) SetObjectBoolElem(key string, value bool) {
 		if elem.Key.AsString() == key {
 			elem.Value.Type = Bool
 			elem.Value.Value = val
-			return
+			return n
 		}
 	}
 	elem := CreateObjectElem()
@@ -198,14 +201,15 @@ func (n *Node) SetObjectBoolElem(key string, value bool) {
 	elem.Value = CreateBoolNode()
 	elem.Value.Value = val
 	n.ObjectValues = append(n.ObjectValues, elem)
+	return n
 }
 
 // SetObjectNodeElem set kv pair
-func (n *Node) SetObjectNodeElem(key string, value *Node) {
+func (n *Node) SetObjectNodeElem(key string, value *Node) *Node {
 	for _, elem := range n.ObjectValues {
 		if elem.Key.AsString() == key {
 			elem.Value = value
-			return
+			return n
 		}
 	}
 	elem := CreateObjectElem()
@@ -213,6 +217,7 @@ func (n *Node) SetObjectNodeElem(key string, value *Node) {
 	elem.Key.Value = bytesToString(MarshalString([]byte(key)))
 	elem.Value = value
 	n.ObjectValues = append(n.ObjectValues, elem)
+	return n
 }
 
 // AsMap create map for chilren

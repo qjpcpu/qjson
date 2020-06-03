@@ -528,3 +528,96 @@ func (suite *JSONTreeTestSuite) TestIsXXX() {
 	suite.True(CreateIntegerNode().IsNumber())
 	suite.True(CreateFloatNode().IsNumber())
 }
+
+func (suite *JSONTreeTestSuite) TestConvertSimpleObject() {
+	str := "Text"
+	obj := &struct {
+		Name string
+		Text *string `json:"text"`
+		Int  int     `json:"-"`
+		Ptr  *int    `json:"ptr,omitempty"`
+	}{Name: "Jack", Int: 100, Text: &str}
+	tree, err := ConvertToJSONTree(obj)
+	suite.Nil(err)
+	std, _ := json.Marshal(obj)
+	q, _ := json.Marshal(tree)
+	suite.Equal(string(std), string(q))
+}
+
+func (suite *JSONTreeTestSuite) TestConvertEmbedObject() {
+	type Inner struct {
+		X string `json:"xt"`
+	}
+	type Inner2 struct {
+		T string
+	}
+	str := "Text"
+	obj := &struct {
+		Name string
+		Text *string `json:"text"`
+		Int  int     `json:"-"`
+		Ptr  *int    `json:"ptr,omitempty"`
+		Inner
+		*Inner2
+	}{Name: "Jack", Int: 100, Text: &str}
+	obj.Inner.X = "33"
+	obj.Inner2 = &Inner2{T: "x"}
+	tree, err := ConvertToJSONTree(obj)
+	suite.Nil(err)
+	std, _ := json.Marshal(obj)
+	q, _ := json.Marshal(tree)
+	suite.T().Log(string(std), string(q))
+	suite.Equal(string(std), string(q))
+}
+
+func (suite *JSONTreeTestSuite) TestConvertMap() {
+	type Inner struct {
+		X string `json:"xt"`
+	}
+	obj := map[string]interface{}{
+		"aa": 100,
+		"bb": &Inner{X: "34"},
+	}
+	tree, err := ConvertToJSONTree(obj)
+	suite.Nil(err)
+	std, _ := json.Marshal(obj)
+	q, _ := json.Marshal(tree)
+	suite.T().Log(string(std), string(q))
+	suite.Equal(string(std), string(q))
+}
+
+func (suite *JSONTreeTestSuite) TestConvertSlice() {
+	type Inner struct {
+		X string `json:"xt"`
+	}
+	obj := []*Inner{
+		{X: "1"},
+		{X: "2"},
+	}
+	tree, err := ConvertToJSONTree(obj)
+	suite.Nil(err)
+	std, _ := json.Marshal(obj)
+	q, _ := json.Marshal(tree)
+	suite.T().Log(string(std), string(q))
+	suite.Equal(string(std), string(q))
+}
+
+func (suite *JSONTreeTestSuite) TestConvertWithInterface() {
+	type Response struct {
+		Code int         `json:"code"`
+		Data interface{} `json:"data"`
+	}
+	type Inner struct {
+		X string `json:"xt"`
+	}
+	obj := &Response{
+		Code: 100,
+		Data: &Inner{X: "jkljlk"},
+	}
+	tree, err := ConvertToJSONTree(obj)
+	suite.Nil(err)
+	std, _ := json.Marshal(obj)
+	q, _ := json.Marshal(tree)
+	suite.T().Log(string(std), string(q))
+	suite.Equal(string(std), string(q))
+}

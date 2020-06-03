@@ -2,7 +2,6 @@ package qjson
 
 import (
 	"bytes"
-	"encoding/json"
 	"strconv"
 )
 
@@ -61,11 +60,9 @@ func Decode(jsonBytes []byte) (*JSONTree, error) {
 
 // ConvertToJSONTree any object to json tree
 func ConvertToJSONTree(obj interface{}) (*JSONTree, error) {
-	data, err := json.Marshal(obj)
-	if err != nil {
-		return nil, err
-	}
-	return Decode(data)
+	tree := makeNewTree()
+	tree.Root = converter(0).Convert(obj)
+	return tree, nil
 }
 
 /* node methods */
@@ -240,7 +237,13 @@ func (n *Node) SetRawValue(str string) *Node {
 
 // SetString to string node
 func (n *Node) SetString(str string) *Node {
-	n.Value = bytesToString(MarshalString([]byte(str)))
+	n.Value = bytesToString(MarshalString(stringToBytes(str)))
+	return n
+}
+
+// SetStringBytes to string node
+func (n *Node) SetStringBytes(bts []byte) *Node {
+	n.Value = bytesToString(MarshalString(bts))
 	return n
 }
 

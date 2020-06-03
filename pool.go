@@ -7,8 +7,8 @@ import (
 )
 
 var (
-	nodePool   = &sync.Pool{New: func() interface{} { return &Node{} }}
-	objectPool = &sync.Pool{New: func() interface{} { return &ObjectElem{} }}
+	nodePool   = &sync.Pool{New: func() interface{} { return new(Node) }}
+	objectPool = &sync.Pool{New: func() interface{} { return new(ObjectElem) }}
 )
 
 // Release json tree for objects reuse
@@ -24,18 +24,18 @@ func (tree *JSONTree) Release() {
 func CreateNode() *Node {
 	node := nodePool.Get().(*Node)
 	if node.Type == Object {
-		if len(node.ObjectValues) > 0 {
+		if node.ObjectValues != nil {
 			for i := range node.ObjectValues {
 				objectPool.Put(node.ObjectValues[i])
 			}
-			node.ObjectValues = node.ObjectValues[:0]
+			node.ObjectValues = nil
 		}
 	} else if node.Type == Array {
-		if len(node.ArrayValues) > 0 {
+		if node.ArrayValues != nil {
 			for i := range node.ArrayValues {
 				nodePool.Put(node.ArrayValues[i])
 			}
-			node.ArrayValues = node.ArrayValues[:0]
+			node.ArrayValues = nil
 		}
 	}
 	node.color = Color(0)

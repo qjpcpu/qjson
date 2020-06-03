@@ -368,17 +368,14 @@ func (suite *JSONTreeTestSuite) TestStringEncoderDecoder() {
 }
 
 func (suite *JSONTreeTestSuite) TestRelease() {
-	suite.Zero(nodeQueue.Quantity())
 	tree := &JSONTree{}
 	err := json.Unmarshal([]byte(text3), tree)
 	suite.Nil(err)
 	suite.NotNil(tree.Root)
 	tree.Release()
 	suite.Nil(tree.Root)
-	suite.Equal(uint32(1), nodeQueue.Quantity())
 	tree.Release()
 	suite.Nil(tree.Root)
-	suite.Equal(uint32(1), nodeQueue.Quantity())
 }
 
 /* test JSON snippets */

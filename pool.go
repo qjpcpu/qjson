@@ -1,66 +1,59 @@
 package qjson
 
 import (
+	"sync"
 	"sync/atomic"
 	"unsafe"
 )
 
-const defaultQueueSize = 256
-
 var (
-	nodeQueue   = newQueue(defaultQueueSize)
-	objectQueue = newQueue(defaultQueueSize)
+	nodePool   = &sync.Pool{New: func() interface{} { return &Node{} }}
+	objectPool = &sync.Pool{New: func() interface{} { return &ObjectElem{} }}
 )
 
 // Release json tree for objects reuse
 func (tree *JSONTree) Release() {
 	if node := tree.Root; node != nil {
 		if atomic.CompareAndSwapPointer((*unsafe.Pointer)((unsafe.Pointer)(&tree.Root)), unsafe.Pointer(node), unsafe.Pointer(nil)) {
-			nodeQueue.Put(node)
+			nodePool.Put(node)
 		}
 	}
 }
 
 // CreateNode by pool
 func CreateNode() *Node {
-	if v, ok := nodeQueue.Get(); ok {
-		node := v.(*Node)
-		if node.Type == Object {
-			if len(node.ObjectValues) > 0 {
-				for i := range node.ObjectValues {
-					objectQueue.Put(node.ObjectValues[i])
-				}
-				node.ObjectValues = node.ObjectValues[:0]
+	node := nodePool.Get().(*Node)
+	if node.Type == Object {
+		if len(node.ObjectValues) > 0 {
+			for i := range node.ObjectValues {
+				objectPool.Put(node.ObjectValues[i])
 			}
-		} else if node.Type == Array {
-			if len(node.ArrayValues) > 0 {
-				for i := range node.ArrayValues {
-					nodeQueue.Put(node.ArrayValues[i])
-				}
-				node.ArrayValues = node.ArrayValues[:0]
-			}
+			node.ObjectValues = node.ObjectValues[:0]
 		}
-		node.color = Color(0)
-		node.Value = emptyVal
-		node.Type = Null
-		return node
+	} else if node.Type == Array {
+		if len(node.ArrayValues) > 0 {
+			for i := range node.ArrayValues {
+				nodePool.Put(node.ArrayValues[i])
+			}
+			node.ArrayValues = node.ArrayValues[:0]
+		}
 	}
-	return &Node{}
+	node.color = Color(0)
+	node.Value = emptyVal
+	node.Type = Null
+	return node
 }
 
 // CreateObjectElem by pool
 func CreateObjectElem() *ObjectElem {
-	if v, ok := objectQueue.Get(); ok {
-		object := v.(*ObjectElem)
-		if object.Key != nil {
-			nodeQueue.Put(object.Key)
-			object.Key = nil
-		}
-		if object.Value != nil {
-			nodeQueue.Put(object.Value)
-			object.Value = nil
-		}
-		return object
+	object := objectPool.Get().(*ObjectElem)
+	if object.Key != nil {
+		nodePool.Put(object.Key)
+		object.Key = nil
 	}
-	return &ObjectElem{}
+	if object.Value != nil {
+		nodePool.Put(object.Value)
+		object.Value = nil
+	}
+	return object
 }

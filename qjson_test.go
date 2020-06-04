@@ -534,8 +534,8 @@ func (suite *JSONTreeTestSuite) TestConvertSimpleObject() {
 	obj := &struct {
 		Name string
 		Text *string `json:"text"`
-		Int  int     `json:"-"`
-		Ptr  *int    `json:"ptr,omitempty"`
+		Int  int64   `json:"-"`
+		Ptr  *int64  `json:"ptr,omitempty"`
 	}{Name: "Jack", Int: 100, Text: &str}
 	tree, err := ConvertToJSONTree(obj)
 	suite.Nil(err)
@@ -555,8 +555,8 @@ func (suite *JSONTreeTestSuite) TestConvertEmbedObject() {
 	obj := &struct {
 		Name string
 		Text *string `json:"text"`
-		Int  int     `json:"-"`
-		Ptr  *int    `json:"ptr,omitempty"`
+		Int  int64   `json:"-"`
+		Ptr  *int64  `json:"ptr,omitempty"`
 		Inner
 		*Inner2
 	}{Name: "Jack", Int: 100, Text: &str}

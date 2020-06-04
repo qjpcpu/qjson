@@ -38,9 +38,9 @@ func (cvt converter) ConvertAny(tp reflect.Type, v reflect.Value) (node *Node) {
 		}
 	case reflect.Bool:
 		node = CreateBoolNode().SetBool(v.Bool())
-	case reflect.Int:
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		node = CreateIntegerNode().SetInt(v.Int())
-	case reflect.Uint:
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		node = CreateIntegerNode().SetUint(v.Uint())
 	case reflect.String:
 		node = CreateStringNode().SetStringBytes(stringToBytes(v.String()))

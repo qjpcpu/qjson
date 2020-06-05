@@ -621,3 +621,17 @@ func (suite *JSONTreeTestSuite) TestConvertWithInterface() {
 	suite.T().Log(string(std), string(q))
 	suite.Equal(string(std), string(q))
 }
+
+func (suite *JSONTreeTestSuite) TestRemoveProperty() {
+	str := []byte(`{"a":1,"b":2}`)
+	tree, err := Decode(str)
+	suite.Nil(err)
+	ok := tree.Root.RemoveObjectElemByKey("a")
+	suite.True(ok)
+
+	ok = tree.Root.RemoveObjectElemByKey("a")
+	suite.False(ok)
+
+	s := JSONMarshalWithPanic(tree)
+	suite.Equal(`{"b":2}`, string(s))
+}

@@ -125,6 +125,29 @@ func (n *Node) FindObjectElemByKey(key string) *ObjectElem {
 	return nil
 }
 
+// RemoveObjectElemByKey remove object element
+func (n *Node) RemoveObjectElemByKey(key string) bool {
+	if n.Type != Null && n.Type != Object {
+		panic("node type should be object")
+	}
+	size := len(n.ObjectValues)
+	var delCnt int
+	for i := 0; i < size; i++ {
+		if n.ObjectValues[i].Key.AsString() == key {
+			delCnt++
+		} else if delCnt > 0 {
+			n.ObjectValues[i-delCnt] = n.ObjectValues[i]
+		}
+	}
+	if delCnt > 0 {
+		for i := 0; i < delCnt; i++ {
+			objectPool.Put(n.ObjectValues[size-i-1])
+		}
+		n.ObjectValues = n.ObjectValues[:size-delCnt]
+	}
+	return delCnt > 0
+}
+
 // SetObjectStringElem set kv pair
 func (n *Node) SetObjectStringElem(key, value string) *Node {
 	for _, elem := range n.ObjectValues {

@@ -10,6 +10,8 @@ const (
 	omitEmpty   = "omitempty"
 )
 
+var converterInst = converter(0)
+
 type converter int
 
 func (cvt converter) Convert(obj interface{}) (node *Node) {
@@ -43,7 +45,7 @@ func (cvt converter) ConvertAny(tp reflect.Type, v reflect.Value) (node *Node) {
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		node = CreateIntegerNode().SetUint(v.Uint())
 	case reflect.String:
-		node = CreateStringNode().SetStringBytes(stringToBytes(v.String()))
+		node = CreateStringNode().setStringBytes(stringToBytes(v.String()))
 	case reflect.Array, reflect.Slice:
 		node = CreateArrayNode()
 		for i := 0; i < v.Len(); i++ {
@@ -90,7 +92,7 @@ func (cvt converter) ConvertObject(tp reflect.Type, v reflect.Value) (node *Node
 			node.ObjectValues = append(node.ObjectValues, val.ObjectValues...)
 		} else {
 			elem := CreateObjectElem()
-			elem.Key = CreateStringNode().SetStringBytes(stringToBytes(name))
+			elem.Key = CreateStringNode().setStringBytes(stringToBytes(name))
 			elem.Value = val
 			node.ObjectValues = append(node.ObjectValues, elem)
 		}

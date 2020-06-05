@@ -35,6 +35,12 @@ func isIntegerChar(b byte) bool {
 	return b >= '0' && b <= '9'
 }
 
+func copyBytes(src []byte) []byte {
+	dest := make([]byte, len(src))
+	copy(dest, src)
+	return dest
+}
+
 // CreateObjectNode create object node
 func CreateObjectNode() *Node {
 	node := CreateNode()

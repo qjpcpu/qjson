@@ -10,7 +10,7 @@ import (
 )
 
 func MarshalString(s []byte) []byte {
-	return stringBytes(s)
+	return quoteBytes(s)
 }
 
 func UnmarshalString(s []byte) ([]byte, error) {
@@ -160,7 +160,7 @@ func unquoteBytes(s []byte) (t []byte, ok bool) {
 	return b[0:w], true
 }
 
-func stringBytes(s []byte) []byte {
+func quoteBytes(s []byte) []byte {
 	e := bytesPool.Get().(*bytes.Buffer)
 	e.Reset()
 	defer bytesPool.Put(e)
@@ -233,7 +233,7 @@ func stringBytes(s []byte) []byte {
 		e.Write(s[start:])
 	}
 	e.WriteByte('"')
-	return stringToBytes(e.String())
+	return copyBytes(e.Bytes())
 }
 
 // safeSet holds the value true if the ASCII character with the given array

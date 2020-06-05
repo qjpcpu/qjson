@@ -173,7 +173,7 @@ func (n *Node) marshalWithColor() []byte {
 		}
 		buf.WriteByte(arrayEnd)
 	}
-	return stringToBytes(buf.String())
+	return copyBytes(buf.Bytes())
 }
 
 func (e ObjectElem) marshalWithColor() []byte {
@@ -186,7 +186,7 @@ func (e ObjectElem) marshalWithColor() []byte {
 	buf.Write(key)
 	buf.WriteByte(colonChar)
 	buf.Write(val)
-	return stringToBytes(buf.String())
+	return copyBytes(buf.Bytes())
 }
 
 // JSONMarshalWithPanic json marshal with panic

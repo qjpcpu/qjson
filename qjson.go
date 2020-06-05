@@ -61,7 +61,7 @@ func Decode(jsonBytes []byte) (*JSONTree, error) {
 // ConvertToJSONTree any object to json tree
 func ConvertToJSONTree(obj interface{}) (*JSONTree, error) {
 	tree := makeNewTree()
-	tree.Root = converter(0).Convert(obj)
+	tree.Root = converterInst.Convert(obj)
 	return tree, nil
 }
 
@@ -241,8 +241,8 @@ func (n *Node) SetString(str string) *Node {
 	return n
 }
 
-// SetStringBytes to string node
-func (n *Node) SetStringBytes(bts []byte) *Node {
+// setStringBytes to string node
+func (n *Node) setStringBytes(bts []byte) *Node {
 	n.Value = bytesToString(MarshalString(bts))
 	return n
 }
@@ -277,7 +277,7 @@ func (n *Node) AsString() string {
 		if err != nil {
 			panic(err)
 		}
-		return string(s)
+		return bytesToString(s)
 	case Bool:
 		if n.Value == trueVal {
 			return trueVal
@@ -413,7 +413,7 @@ func (n *Node) MarshalJSON() ([]byte, error) {
 		}
 		buf.WriteByte(arrayEnd)
 	}
-	return stringToBytes(buf.String()), err
+	return copyBytes(buf.Bytes()), err
 }
 
 // MarshalJSON object node is json marshaller
@@ -432,5 +432,5 @@ func (e ObjectElem) MarshalJSON() ([]byte, error) {
 	buf.Write(key)
 	buf.WriteByte(colonChar)
 	buf.Write(val)
-	return stringToBytes(buf.String()), nil
+	return copyBytes(buf.Bytes()), nil
 }

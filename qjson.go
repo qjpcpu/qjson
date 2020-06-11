@@ -3,6 +3,7 @@ package qjson
 import (
 	"bytes"
 	"strconv"
+	"strings"
 )
 
 // NodeType describe a json node type
@@ -121,6 +122,26 @@ func (n *Node) FindObjectElemByKey(key string) *ObjectElem {
 		if kv.Key.AsString() == key {
 			return n.ObjectValues[i]
 		}
+	}
+	return nil
+}
+
+// FindObjectElemByKeyRecursive find object value by key
+func (n *Node) FindObjectElemByKeyRecursive(keyWithDot string) *ObjectElem {
+	keys := strings.Split(keyWithDot, ".")
+	current, cnt := n, 0
+	var elem *ObjectElem
+	for _, key := range keys {
+		cnt++
+		if elem = current.FindObjectElemByKey(key); elem == nil {
+			break
+		}
+		if current = elem.Value; current == nil {
+			break
+		}
+	}
+	if cnt == len(keys) {
+		return elem
 	}
 	return nil
 }

@@ -635,3 +635,19 @@ func (suite *JSONTreeTestSuite) TestRemoveProperty() {
 	s := JSONMarshalWithPanic(tree)
 	suite.Equal(`{"b":2}`, string(s))
 }
+
+func (suite *JSONTreeTestSuite) TestFindObjectElemByKeyRecursive() {
+	str := []byte(`{"a":1,"b":2,"c":{"d":{"e":1},"t":2}}`)
+	tree, err := Decode(str)
+	suite.Nil(err)
+	v := tree.Root.FindObjectElemByKeyRecursive("c.d.e")
+	suite.Equal("1", v.Value.AsString())
+	v = tree.Root.FindObjectElemByKeyRecursive("c.t")
+	suite.Equal("2", v.Value.AsString())
+	v = tree.Root.FindObjectElemByKeyRecursive("c.x.e")
+	suite.Nil(v)
+	v = tree.Root.FindObjectElemByKeyRecursive("c.x.e.f")
+	suite.Nil(v)
+	v = tree.Root.FindObjectElemByKeyRecursive("m.x.e.f")
+	suite.Nil(v)
+}

@@ -261,10 +261,8 @@ func (suite *JSONTreeTestSuite) TestDecodeComplexJSONWithIndent() {
 }
 
 func (suite *JSONTreeTestSuite) TestColorMarshal() {
-	MaxColorLevel = 10
 	tree, err := Decode([]byte(text1))
 	suite.Nil(err)
-	tree.ColoredByLevel()
 	/* should have color */
 	data := tree.ColorfulMarshal()
 	suite.T().Logf("%s", data)
@@ -650,4 +648,34 @@ func (suite *JSONTreeTestSuite) TestFindObjectElemByKeyRecursive() {
 	suite.Nil(v)
 	v = tree.Root.FindObjectElemByKeyRecursive("m.x.e.f")
 	suite.Nil(v)
+}
+
+func (suite *JSONTreeTestSuite) TestSetString() {
+	str := []byte(`{"a":1,"b":2,"c":{"d":{"e":1},"t":2}}`)
+	tree, err := Decode(str)
+	suite.Nil(err)
+	v := tree.Root.FindObjectElemByKey("c")
+	s, err := json.Marshal(v.Value)
+	suite.Nil(err)
+	v.Value.SetString(string(s))
+	v.Value.Type = String
+	json, err := tree.MarshalJSON()
+	suite.Nil(err)
+	suite.Equal(`{"a":1,"b":2,"c":"{\"d\":{\"e\":1},\"t\":2}"}`, string(json))
+}
+
+func (suite *JSONTreeTestSuite) TestColorMarshalWithIndent() {
+	tree, err := Decode([]byte(text1))
+	suite.Nil(err)
+
+	/* should have color */
+	data := tree.ColorfulMarshalWithIndent()
+	suite.T().Logf("%s", data)
+
+	/* should have color */
+	data = tree.ColorfulMarshal()
+	suite.T().Logf("%s", data)
+
+	suite.T().Logf("%s %s", makeNewTree().ColorfulMarshal(), makeNewTree().ColorfulMarshalWithIndent())
+	suite.T().Logf("%s %s", new(JSONTree).ColorfulMarshal(), new(JSONTree).ColorfulMarshalWithIndent())
 }

@@ -38,7 +38,6 @@ func CreateNode() *Node {
 			node.ArrayValues = nil
 		}
 	}
-	node.color = Color(0)
 	node.Value = emptyVal
 	node.Type = Null
 	return node

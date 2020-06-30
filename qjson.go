@@ -32,7 +32,6 @@ type Color byte
 // Node represent json node
 type Node struct {
 	Type         NodeType
-	color        Color
 	Value        string
 	ObjectValues []*ObjectElem
 	ArrayValues  []*Node

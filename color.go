@@ -5,6 +5,7 @@ import (
 	ejson "encoding/json"
 	"fmt"
 	"reflect"
+	"strings"
 
 	"github.com/fatih/color"
 )
@@ -15,33 +16,20 @@ func PrettyMarshal(v interface{}) []byte {
 	if err != nil {
 		panic(err)
 	}
-	tree.ColoredByLevel()
 	return tree.ColorfulMarshal()
 }
 
-const (
-	// Yellow color
-	Yellow Color = iota + 1
-	// Cyan color
-	Cyan
-	// Green color
-	Green
-	// Magenta color
-	Magenta
-	// Blue color
-	Blue
-	// Red color
-	Red
-	// White color
-	White
-	// Black color
-	Black
-)
+// PrettyMarshalWithIndent marshal json with indent
+func PrettyMarshalWithIndent(v interface{}) []byte {
+	tree, err := Decode(JSONMarshalWithPanic(v))
+	if err != nil {
+		panic(err)
+	}
+	return tree.ColorfulMarshalWithIndent()
+}
 
 var (
-	// MaxColorLevel max render level
-	MaxColorLevel = 3
-	colorFuncs    = []func(a ...interface{}) string{
+	colorFuncs = []func(a ...interface{}) string{
 		func(e ...interface{}) string {
 			var s string
 			for _, v := range e {
@@ -49,144 +37,25 @@ var (
 			}
 			return s
 		},
-		color.New(color.FgYellow).SprintFunc(),
-		color.New(color.FgCyan).SprintFunc(),
-		color.New(color.FgGreen).SprintFunc(),
-		color.New(color.FgMagenta).SprintFunc(),
-		color.New(color.FgBlue).SprintFunc(),
-		color.New(color.FgRed).SprintFunc(),
-		color.New(color.FgWhite, color.BgBlack).SprintFunc(),
-		color.New(color.FgBlack, color.BgWhite).SprintFunc(),
+		color.New(color.FgYellow, color.Bold).SprintFunc(),
+		color.New(color.FgCyan, color.Bold).SprintFunc(),
+		color.New(color.FgGreen, color.Bold).SprintFunc(),
+		color.New(color.FgMagenta, color.Bold).SprintFunc(),
+		color.New(color.FgBlue, color.Bold).SprintFunc(),
+		color.New(color.FgRed, color.Bold).SprintFunc(),
+		color.New(color.FgWhite, color.BgBlack, color.Bold).SprintFunc(),
+		color.New(color.FgBlack, color.BgWhite, color.Bold).SprintFunc(),
 	}
 )
 
 // ColorfulMarshal print json with color
 func (t *JSONTree) ColorfulMarshal() []byte {
-	return t.Root.marshalWithColor()
+	return new(Formatter).Format(t)
 }
 
-// SetSelfColor set current node color
-func (n *Node) SetSelfColor(c Color) {
-	n.setColor(c, false)
-}
-
-// SetColor set color recursive
-func (n *Node) SetColor(c Color) {
-	n.setColor(c, true)
-}
-
-func (n *Node) setLeveledColor(idx int) {
-	if idx > MaxColorLevel {
-		return
-	}
-	c := Color(idx % len(colorFuncs))
-	switch n.Type {
-	case Null:
-		n.color = c
-	case String:
-		n.color = c
-	case Bool:
-		n.color = c
-	case Integer, Float:
-		n.color = c
-	case Object:
-		for i := range n.ObjectValues {
-			n.ObjectValues[i].Key.setLeveledColor(idx)
-			n.ObjectValues[i].Value.setLeveledColor(idx + 1)
-		}
-	case Array:
-		for i := range n.ArrayValues {
-			n.ArrayValues[i].setLeveledColor(idx)
-		}
-	}
-}
-
-func (n *Node) setColor(c Color, recursive bool) {
-	switch n.Type {
-	case Null:
-		n.color = c
-	case String:
-		n.color = c
-	case Bool:
-		n.color = c
-	case Integer, Float:
-		n.color = c
-	case Object:
-		if recursive {
-			for i := range n.ObjectValues {
-				n.ObjectValues[i].Key.SetColor(c)
-				n.ObjectValues[i].Value.SetColor(c)
-			}
-		}
-	case Array:
-		if recursive {
-			for i := range n.ArrayValues {
-				n.ArrayValues[i].SetColor(c)
-			}
-		}
-	}
-}
-
-func (n *Node) getColorFunc() func(...interface{}) string {
-	idx := int(n.color) % len(colorFuncs)
-	return colorFuncs[idx]
-}
-
-func (n *Node) marshalWithColor() []byte {
-	fn := n.getColorFunc()
-	buf := bytesPool.Get().(*bytes.Buffer)
-	buf.Reset()
-	defer bytesPool.Put(buf)
-	switch n.Type {
-	case Null:
-		buf.WriteString(fn(nullVal))
-	case String:
-		buf.WriteByte(quote)
-		buf.WriteString(fn(n.Value[1 : len(n.Value)-1]))
-		buf.WriteByte(quote)
-	case Bool:
-		if n.Value == trueVal {
-			buf.WriteString(fn(trueVal))
-		} else {
-			buf.WriteString(fn(falseVal))
-		}
-	case Integer, Float:
-		buf.WriteString(fn(n.Value))
-	case Object:
-		buf.WriteByte(objectStart)
-		for i, elem := range n.ObjectValues {
-			v := elem.marshalWithColor()
-			buf.Write(v)
-			if i < len(n.ObjectValues)-1 {
-				buf.WriteByte(commaChar)
-			}
-		}
-		buf.WriteByte(objectEnd)
-	case Array:
-		buf.WriteByte(arrayStart)
-		for i, elem := range n.ArrayValues {
-			v := elem.marshalWithColor()
-			buf.Write(v)
-			if i < len(n.ArrayValues)-1 {
-				buf.WriteByte(commaChar)
-			}
-		}
-		buf.WriteByte(arrayEnd)
-	}
-	return copyBytes(buf.Bytes())
-}
-
-func (e ObjectElem) marshalWithColor() []byte {
-	buf := bytesPool.Get().(*bytes.Buffer)
-	buf.Reset()
-	defer bytesPool.Put(buf)
-	key := e.Key.marshalWithColor()
-	val := e.Value.marshalWithColor()
-
-	buf.Write(key)
-	buf.WriteByte(colonChar)
-	buf.Write(val)
-	return copyBytes(buf.Bytes())
+// ColorfulMarshalWithIndent print json with indent
+func (t *JSONTree) ColorfulMarshalWithIndent() []byte {
+	return NewFormatter().Format(t)
 }
 
 // JSONMarshalWithPanic json marshal with panic
@@ -211,7 +80,113 @@ func JSONMarshalWithPanic(t interface{}) []byte {
 	return ret
 }
 
-// ColoredByLevel set leveled color
-func (t *JSONTree) ColoredByLevel() {
-	t.Root.setLeveledColor(1)
+type Formatter struct {
+	Indent int
+}
+
+// NewFormatter returns a new formatter with following default values.
+func NewFormatter() *Formatter {
+	return &Formatter{
+		Indent: 2,
+	}
+}
+
+// Format JSONTree
+func (f *Formatter) Format(v *JSONTree) []byte {
+	if v == nil || v.Root == nil {
+		return nil
+	}
+	s := f.pretty(v.Root, 1)
+	return []byte(s)
+}
+
+func (f *Formatter) pretty(node *Node, depth int) string {
+	if node == nil {
+		return ""
+	}
+	fn := f.getColorFuncByDepth(depth)
+	switch node.Type {
+	case String, Bool, Float, Integer:
+		return fn(node.Value)
+	case Null:
+		return fn(nullVal)
+	case Object:
+		return f.processMap(node, depth)
+	case Array:
+		return f.processArray(node, depth)
+	}
+
+	return ""
+}
+
+func (f *Formatter) processMap(m *Node, depth int) string {
+	if m == nil {
+		return ""
+	}
+	currentIndent := f.generateIndent(depth - 1)
+	nextIndent := f.generateIndent(depth)
+	rows := []string{}
+
+	if len(m.ObjectValues) == 0 {
+		return "{}"
+	}
+
+	fn := f.getColorFuncByDepth(depth)
+	for _, elem := range m.ObjectValues {
+		k := fn(elem.Key.Value)
+		v := f.pretty(elem.Value, depth+1)
+		var row string
+		if f.isNoIndent() {
+			row = fmt.Sprintf("%s:%s", k, v)
+		} else {
+			row = fmt.Sprintf("%s%s: %s", nextIndent, k, v)
+		}
+
+		rows = append(rows, row)
+	}
+	if f.isNoIndent() {
+		return fmt.Sprintf("{%s}", strings.Join(rows, ","))
+	}
+	return fmt.Sprintf("{\n%s\n%s}", strings.Join(rows, ",\n"), currentIndent)
+}
+
+func (f *Formatter) processArray(a *Node, depth int) string {
+	if a == nil {
+		return ""
+	}
+	currentIndent := f.generateIndent(depth - 1)
+	nextIndent := f.generateIndent(depth)
+	rows := []string{}
+
+	if len(a.ArrayValues) == 0 {
+		return "[]"
+	}
+
+	for _, val := range a.ArrayValues {
+		c := f.pretty(val, depth+1)
+		var row string
+		if f.isNoIndent() {
+			row = c
+		} else {
+			row = nextIndent + c
+		}
+		rows = append(rows, row)
+	}
+	if f.isNoIndent() {
+		return fmt.Sprintf("[%s]", strings.Join(rows, ","))
+	}
+	return fmt.Sprintf("[\n%s\n%s]", strings.Join(rows, ",\n"), currentIndent)
+}
+
+func (f *Formatter) generateIndent(depth int) string {
+	return strings.Join(make([]string, f.Indent*depth+1), " ")
+}
+
+func (f *Formatter) isNoIndent() bool {
+	return f.Indent == 0
+}
+
+func (f *Formatter) getColorFuncByDepth(depth int) func(...interface{}) string {
+	idx := depth % len(colorFuncs)
+	return colorFuncs[idx]
 }

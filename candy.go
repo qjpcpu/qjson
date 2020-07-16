@@ -23,8 +23,13 @@ func (m tinyMap) Contains(b byte) bool {
 	return int(b) < len(m) && m[int(b)] != 0
 }
 
+type bstring struct {
+	S   string
+	Cap int
+}
+
 func stringToBytes(s string) []byte {
-	return *(*[]byte)(unsafe.Pointer(&s))
+	return *(*[]byte)(unsafe.Pointer(&bstring{S: s, Cap: len(s)}))
 }
 
 func bytesToString(b []byte) string {

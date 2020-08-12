@@ -3,6 +3,7 @@ package qjson
 import (
 	"bytes"
 	"io/ioutil"
+	"sync"
 	"testing"
 
 	"encoding/json"
@@ -678,4 +679,53 @@ func (suite *JSONTreeTestSuite) TestColorMarshalWithIndent() {
 
 	suite.T().Logf("%s %s", makeNewTree().ColorfulMarshal(), makeNewTree().ColorfulMarshalWithIndent())
 	suite.T().Logf("%s %s", new(JSONTree).ColorfulMarshal(), new(JSONTree).ColorfulMarshalWithIndent())
+}
+
+func (suite *JSONTreeTestSuite) checkNode(n *Node) {
+	if n == nil {
+		return
+	}
+	switch n.Type {
+	case Null:
+		suite.Equal(nullVal, n.Value)
+		suite.Empty(n.ArrayValues)
+		suite.Empty(n.ObjectValues)
+	case Bool:
+		suite.True(n.Value == trueVal || n.Value == falseVal)
+		suite.Empty(n.ArrayValues)
+		suite.Empty(n.ObjectValues)
+	case Integer, Float, String:
+		suite.Empty(n.ArrayValues)
+		suite.Empty(n.ObjectValues)
+	case Object:
+		suite.Empty(n.ArrayValues)
+		suite.Equal(emptyVal, n.Value)
+		for _, elem := range n.ObjectValues {
+			suite.checkNode(elem.Key)
+			suite.checkNode(elem.Value)
+		}
+		n.Type = String
+	case Array:
+		suite.Empty(n.ObjectValues)
+		suite.Equal(emptyVal, n.Value)
+		for _, elem := range n.ArrayValues {
+			suite.checkNode(elem)
+		}
+		n.Type = Bool
+	}
+}
+
+func (suite *JSONTreeTestSuite) TestNodeMess() {
+	wg := new(sync.WaitGroup)
+	for i := 0; i < 10000; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			tree, err := Decode([]byte(text1))
+			suite.Nil(err)
+			defer tree.Release()
+			suite.checkNode(tree.Root)
+		}()
+	}
+	wg.Wait()
 }

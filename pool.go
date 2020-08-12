@@ -23,20 +23,17 @@ func (tree *JSONTree) Release() {
 // CreateNode by pool
 func CreateNode() *Node {
 	node := nodePool.Get().(*Node)
-	if node.Type == Object {
-		if node.ObjectValues != nil {
-			for i := range node.ObjectValues {
-				objectPool.Put(node.ObjectValues[i])
-			}
-			node.ObjectValues = nil
+	if node.ObjectValues != nil {
+		for i := range node.ObjectValues {
+			objectPool.Put(node.ObjectValues[i])
 		}
-	} else if node.Type == Array {
-		if node.ArrayValues != nil {
-			for i := range node.ArrayValues {
-				nodePool.Put(node.ArrayValues[i])
-			}
-			node.ArrayValues = nil
+		node.ObjectValues = nil
+	}
+	if node.ArrayValues != nil {
+		for i := range node.ArrayValues {
+			nodePool.Put(node.ArrayValues[i])
 		}
+		node.ArrayValues = nil
 	}
 	node.Value = emptyVal
 	node.Type = Null

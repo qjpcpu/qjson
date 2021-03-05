@@ -77,7 +77,7 @@ func CreateStringNode() *Node {
 // CreateStringNodeWithValue create string node
 func CreateStringNodeWithValue(val string) *Node {
 	node := CreateStringNode()
-	node.Value = bytesToString(MarshalString([]byte(val)))
+	node.Value = bytesToString(stdMarshalString([]byte(val)))
 	return node
 }
 

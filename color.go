@@ -1,32 +1,11 @@
 package qjson
 
 import (
-	"bytes"
-	ejson "encoding/json"
 	"fmt"
-	"reflect"
 	"strings"
 
 	"github.com/fatih/color"
 )
-
-// PrettyMarshal marshal json with color
-func PrettyMarshal(v interface{}) []byte {
-	tree, err := Decode(JSONMarshalWithPanic(v))
-	if err != nil {
-		panic(err)
-	}
-	return tree.ColorfulMarshal()
-}
-
-// PrettyMarshalWithIndent marshal json with indent
-func PrettyMarshalWithIndent(v interface{}) []byte {
-	tree, err := Decode(JSONMarshalWithPanic(v))
-	if err != nil {
-		panic(err)
-	}
-	return tree.ColorfulMarshalWithIndent()
-}
 
 var (
 	colorFuncs = []func(a ...interface{}) string{
@@ -47,38 +26,6 @@ var (
 		color.New(color.FgBlack, color.BgWhite, color.Bold).SprintFunc(),
 	}
 )
-
-// ColorfulMarshal print json with color
-func (t *JSONTree) ColorfulMarshal() []byte {
-	return new(Formatter).Format(t)
-}
-
-// ColorfulMarshalWithIndent print json with indent
-func (t *JSONTree) ColorfulMarshalWithIndent() []byte {
-	return NewFormatter().Format(t)
-}
-
-// JSONMarshalWithPanic json marshal with panic
-func JSONMarshalWithPanic(t interface{}) []byte {
-	if t == nil {
-		return nil
-	}
-	if v := reflect.ValueOf(t); v.Kind() == reflect.Ptr && v.IsNil() {
-		return nil
-	}
-	buffer := &bytes.Buffer{}
-	encoder := ejson.NewEncoder(buffer)
-	encoder.SetEscapeHTML(false)
-	if err := encoder.Encode(t); err != nil {
-		panic(err)
-	}
-	ret := buffer.Bytes()
-	// golang's encoder would always append a '\n', so we should drop it
-	if len(ret) > 0 {
-		ret = ret[:len(ret)-1]
-	}
-	return ret
-}
 
 type Formatter struct {
 	Indent int

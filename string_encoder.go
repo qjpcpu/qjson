@@ -9,11 +9,11 @@ import (
 	"unicode/utf8"
 )
 
-func MarshalString(s []byte) []byte {
+func stdMarshalString(s []byte) []byte {
 	return quoteBytes(s)
 }
 
-func UnmarshalString(s []byte) ([]byte, error) {
+func stdUnmarshalString(s []byte) ([]byte, error) {
 	ret, ok := unquoteBytes(s)
 	if !ok {
 		return nil, errors.New("bad string")

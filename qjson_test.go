@@ -353,12 +353,12 @@ func (suite *JSONTreeTestSuite) TestStringBytes() {
 
 func (suite *JSONTreeTestSuite) TestStringEncoderDecoder() {
 	s := `"hello' " \n = \r`
-	m1 := MarshalString([]byte(s))
+	m1 := stdMarshalString([]byte(s))
 	m2, err := json.Marshal(s)
 	suite.Nil(err)
 	suite.Equal(string(m1), string(m2))
 
-	m3, err := UnmarshalString(m1)
+	m3, err := stdUnmarshalString(m1)
 	suite.Nil(err)
 	var s1 string
 	json.Unmarshal(m1, &s1)

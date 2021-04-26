@@ -82,12 +82,9 @@ func (n *Node) AsTree() *JSONTree {
 	return tree
 }
 
-// FindNodeByKey find object value by key
-func (n *Node) FindNodeByKey(key string) *Node {
-	if elem := n.FindObjectElemByKey(key); elem != nil {
-		return elem.Value
-	}
-	return nil
+// Find find offspring node by key
+func (n *Node) Find(key string) *Node {
+	return findNode(n, makeStPath(key))
 }
 
 // FindObjectElemByKey find object value by key
@@ -103,6 +100,7 @@ func (n *Node) FindObjectElemByKey(key string) *ObjectElem {
 	return nil
 }
 
+// Deprecated, use tree.Find
 // FindObjectElemByKeyRecursive find object value by key
 func (n *Node) FindObjectElemByKeyRecursive(keyWithDot string) *ObjectElem {
 	keys := strings.Split(keyWithDot, ".")

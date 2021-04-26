@@ -16,6 +16,67 @@ err := json.Unmarshal([]byte(`{"a":1}`),&tree)
 err := json.Marshal(tree)
 #+end_src
 
+** query
+
+A QJSON Path is a text string syntax that describes a search pattern for quickly retreiving values from a JSON payload.
+
+*** Path structure
+
+A QJSON Path is intended to be easily expressed as a series of components seperated by a `.` character.
+
+**** Example
+
+Given this JSON
+
+#+begin_src
+{
+  "name": {"first": "Tom", "last": "Anderson"},
+  "age":37,
+  "children": ["Sara","Alex","Jack"],
+  "fav.movie": "Deer Hunter",
+  "friends": [
+    {"first": "Dale", "last": "Murphy", "age": 44, "nets": ["ig", "fb", "tw"]},
+    {"first": "Roger", "last": "Craig", "age": 68, "nets": ["fb", "tw"]},
+    {"first": "Jane", "last": "Murphy", "age": 47, "nets": ["ig", "tw"]}
+  ]
+}
+#+end_src
+
+The following QJSON Paths evaluate to the accompanying values.
+
+**** Basic
+
+In many cases you'll just want to retreive values by object name or array index.
+
+#+begin_src go
+name.last              "Anderson"
+name.first             "Tom"
+age                    37
+children               ["Sara","Alex","Jack"]
+children.0             "Sara"
+children.1             "Alex"
+friends.1              {"first": "Roger", "last": "Craig", "age": 68}
+friends.1.first        "Roger"
+#+end_src
+
+**** Escape character
+
+Special purpose characters, such as `.`, can be escaped with `\`.
+
+#+begin_src go
+fav\.movie             "Deer Hunter"
+#+end_src
+
+You'll also need to make sure that the `\` character is correctly escaped when hardcoding a path in you source code.
+
+#+begin_src go
+// Go
+node := tree.Find("fav\\.movie")  // must escape the slash
+node := tree.Find(json, `fav\.movie`)   // no need to escape the slash
+#+end_src
+
+** modify
+
 ** benchmark
 
 #+begin_src 
@@ -29,3 +90,4 @@ BenchmarkMarshalStd-12             50682             22141 ns/op           10151
 PASS
 ok      github.com/qjpcpu/qjson 6.098s
 #+end_src
+

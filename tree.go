@@ -8,41 +8,46 @@ type JSONTree struct {
 /* tree methods */
 
 // IsNull tell node is null or not
-func (t *JSONTree) IsNull() bool {
-	return t.Root == nil || t.Root.IsNull()
+func (tree *JSONTree) IsNull() bool {
+	return tree.Root == nil || tree.Root.IsNull()
 }
 
 // MarshalJSON json marshaller
-func (t *JSONTree) MarshalJSON() ([]byte, error) {
-	return t.Root.MarshalJSON()
+func (tree *JSONTree) MarshalJSON() ([]byte, error) {
+	return tree.Root.MarshalJSON()
 }
 
 // UnmarshalJSON json unmarshaller
-func (t *JSONTree) UnmarshalJSON(data []byte) (err error) {
-	var tree *JSONTree
-	if tree, err = Decode(data); err != nil {
+func (tree *JSONTree) UnmarshalJSON(data []byte) (err error) {
+	var tree1 *JSONTree
+	if tree1, err = Decode(data); err != nil {
 		return err
 	}
-	*t = *tree
+	*tree = *tree1
 	return
 }
 
 // JSONString tree to string
-func (t *JSONTree) JSONString() string {
-	return string(JSONMarshalWithPanic(t))
+func (tree *JSONTree) JSONString() string {
+	return string(JSONMarshalWithPanic(tree))
 }
 
 // ColorfulMarshal print json with color
-func (t *JSONTree) ColorfulMarshal() []byte {
-	return new(Formatter).Format(t)
+func (tree *JSONTree) ColorfulMarshal() []byte {
+	return new(Formatter).Format(tree)
 }
 
 // ColorfulMarshalWithIndent print json with indent
-func (t *JSONTree) ColorfulMarshalWithIndent() []byte {
-	return NewFormatter().Format(t)
+func (tree *JSONTree) ColorfulMarshalWithIndent() []byte {
+	return NewFormatter().Format(tree)
 }
 
 /* tree generator */
 func makeNewTree() *JSONTree {
 	return &JSONTree{Root: CreateNode()}
+}
+
+// Find json node/nodes by path selector
+func (tree *JSONTree) Find(path string) *Node {
+	return findNode(tree.Root, makeStPath(path))
 }

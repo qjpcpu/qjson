@@ -1,6 +1,7 @@
 package qjson
 
 import (
+	"encoding/json"
 	"reflect"
 )
 
@@ -14,7 +15,7 @@ var converterInst = converter(0)
 
 type converter int
 
-func (cvt converter) Convert(obj interface{}) (node *Node) {
+func (cvt converter) Convert(obj interface{}) (node *Node, err error) {
 	if obj == nil {
 		return
 	}
@@ -23,7 +24,22 @@ func (cvt converter) Convert(obj interface{}) (node *Node) {
 	return cvt.ConvertAny(tp, v)
 }
 
-func (cvt converter) ConvertAny(tp reflect.Type, v reflect.Value) (node *Node) {
+func (cvt converter) stdConvertAny(inf interface{}) (node *Node, err error) {
+	if data, err := json.Marshal(inf); err != nil {
+		return nil, err
+	} else if tree, err := Decode(data); err != nil {
+		return nil, err
+	} else {
+		return tree.Root, nil
+	}
+}
+
+func (cvt converter) ConvertAny(tp reflect.Type, v reflect.Value) (node *Node, err error) {
+	if inf := v.Interface(); inf != nil {
+		if _, ok := inf.(json.Marshaler); ok {
+			return cvt.stdConvertAny(inf)
+		}
+	}
 	if tp.Kind() == reflect.Ptr {
 		if v.IsNil() {
 			return
@@ -36,7 +52,7 @@ func (cvt converter) ConvertAny(tp reflect.Type, v reflect.Value) (node *Node) {
 		if v.IsNil() {
 			node = CreateNode()
 		} else {
-			node = cvt.ConvertAny(v.Elem().Type(), v.Elem())
+			node, err = cvt.ConvertAny(v.Elem().Type(), v.Elem())
 		}
 	case reflect.Bool:
 		node = CreateBoolNode().SetBool(v.Bool())
@@ -50,7 +66,7 @@ func (cvt converter) ConvertAny(tp reflect.Type, v reflect.Value) (node *Node) {
 		node = CreateArrayNode()
 		for i := 0; i < v.Len(); i++ {
 			elemTp := tp.Elem()
-			if n := cvt.ConvertAny(elemTp, v.Index(i)); n != nil {
+			if n, er := cvt.ConvertAny(elemTp, v.Index(i)); er == nil && n != nil {
 				node.ArrayValues = append(node.ArrayValues, n)
 			}
 		}
@@ -61,21 +77,23 @@ func (cvt converter) ConvertAny(tp reflect.Type, v reflect.Value) (node *Node) {
 			keyTp := tp.Key()
 			elemTp := tp.Elem()
 			for _, key := range keys {
-				if n := cvt.ConvertAny(elemTp, v.MapIndex(key)); n != nil {
+				if n, er := cvt.ConvertAny(elemTp, v.MapIndex(key)); er == nil && n != nil {
 					elem := CreateObjectElem()
-					elem.Key = cvt.ConvertAny(keyTp, key)
+					if elem.Key, er = cvt.ConvertAny(keyTp, key); er != nil {
+						return nil, er
+					}
 					elem.Value = n
 					node.ObjectValues = append(node.ObjectValues, elem)
 				}
 			}
 		}
 	case reflect.Struct:
-		node = cvt.ConvertObject(tp, v)
+		node, err = cvt.ConvertObject(tp, v)
 	}
 	return
 }
 
-func (cvt converter) ConvertObject(tp reflect.Type, v reflect.Value) (node *Node) {
+func (cvt converter) ConvertObject(tp reflect.Type, v reflect.Value) (node *Node, err error) {
 	node = CreateObjectNode()
 	for i := 0; i < tp.NumField(); i++ {
 		fieldType := tp.Field(i)
@@ -84,7 +102,10 @@ func (cvt converter) ConvertObject(tp reflect.Type, v reflect.Value) (node *Node
 		if skip || (omitempty && fieldType.Type.Kind() == reflect.Ptr && fieldVal.IsNil()) {
 			continue
 		}
-		val := cvt.ConvertAny(fieldType.Type, fieldVal)
+		val, er := cvt.ConvertAny(fieldType.Type, fieldVal)
+		if er != nil {
+			return nil, er
+		}
 		if val == nil {
 			continue
 		}

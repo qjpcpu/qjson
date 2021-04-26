@@ -27,9 +27,11 @@ func Decode(jsonBytes []byte) (*JSONTree, error) {
 }
 
 // ConvertToJSONTree any object to json tree
-func ConvertToJSONTree(obj interface{}) (*JSONTree, error) {
-	tree := makeNewTree()
-	tree.Root = converterInst.Convert(obj)
+func ConvertToJSONTree(obj interface{}) (tree *JSONTree, err error) {
+	tree = makeNewTree()
+	if tree.Root, err = converterInst.Convert(obj); err != nil {
+		return tree, err
+	}
 	return tree, nil
 }
 

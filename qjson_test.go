@@ -3,6 +3,8 @@ package qjson
 import (
 	"bytes"
 	"io/ioutil"
+	"strconv"
+	"strings"
 	"sync"
 	"testing"
 
@@ -511,7 +513,7 @@ func (suite *JSONTreeTestSuite) TestCreateObjectNode() {
 	tree.Root.SetObjectIntElem("KEY2", 12)
 	ret := string(JSONMarshalWithPanic(tree))
 	suite.Equal(`{"KEY":"VAL","KEY1":true,"KEY2":12}`, ret)
-	suite.Equal("VAL", tree.Root.FindNodeByKey("KEY").AsString())
+	suite.Equal("VAL", tree.Root.Find("KEY").AsString())
 
 	tree.Root.SetObjectBoolElem("KEY2", false)
 	ret = string(JSONMarshalWithPanic(tree))
@@ -574,14 +576,12 @@ func (suite *JSONTreeTestSuite) TestConvertMap() {
 		X string `json:"xt"`
 	}
 	obj := map[string]interface{}{
-		"aa": 100,
 		"bb": &Inner{X: "34"},
 	}
 	tree, err := ConvertToJSONTree(obj)
 	suite.Nil(err)
 	std, _ := json.Marshal(obj)
 	q, _ := json.Marshal(tree)
-	suite.T().Log(string(std), string(q))
 	suite.Equal(string(std), string(q))
 }
 
@@ -728,4 +728,271 @@ func (suite *JSONTreeTestSuite) TestNodeMess() {
 		}()
 	}
 	wg.Wait()
+}
+
+func (suite *JSONTreeTestSuite) TestSimpleFind() {
+	jsonStr := `{
+  "name": {"first": "Tom", "last": "Anderson"},
+  "age":37,
+  "children": ["Sara","Alex","Jack"],
+  "fav.movie": "Deer Hunter",
+  "favmovie": "Deer Hunter1",
+  "friends": [
+    {"first": "Dale", "last": "Murphy", "age": 44, "nets": ["ig", "fb", "tw"]},
+    {"first": "Roger", "last": "Craig", "age": 68, "nets": ["fb", "tw"]},
+    {"first": "Jane", "last": "Murphy", "age": 47, "nets": ["ig", "tw"]}
+  ]
+}`
+	tree, err := Decode([]byte(jsonStr))
+	suite.NoError(err)
+	node := tree.Find("name.last")
+	suite.NotNil(node)
+	suite.Equal(String, node.Type)
+	suite.Equal("Anderson", node.AsString())
+
+	suite.Equal("Tom", tree.Find("name.first").AsString())
+
+	node = tree.Find("age")
+	suite.Equal(Integer, node.Type)
+	suite.Equal(int64(37), node.AsInt())
+
+	suite.Equal("Deer Hunter1", tree.Find("favmovie").AsString())
+	suite.Equal("Deer Hunter", tree.Find(`fav\.movie`).AsString())
+}
+
+func (suite *JSONTreeTestSuite) TestFindArray() {
+	jsonStr := `{
+  "name": {"first": "Tom", "last": "Anderson"},
+  "age":37,
+  "children": ["Sara","Alex","Jack"],
+  "fav.movie": "Deer Hunter",
+  "friends": [
+    {"first": "Dale", "last": "Murphy", "age": 44, "nets": ["ig", "fb", "tw"]},
+    {"first": "Roger", "last": "Craig", "age": 68, "nets": ["fb", "tw"]},
+    {"first": "Jane", "last": "Murphy", "age": 47, "nets": ["ig", "tw"]}
+  ]
+}`
+	tree, err := Decode([]byte(jsonStr))
+	suite.NoError(err)
+	node := tree.Find("children")
+	suite.NotNil(node)
+	suite.Equal(Array, node.Type)
+	suite.Len(node.ArrayValues, 3)
+	suite.Equal("Sara", node.ArrayValues[0].AsString())
+	suite.Equal("Alex", node.ArrayValues[1].AsString())
+	suite.Equal("Jack", node.ArrayValues[2].AsString())
+
+	suite.Equal("Sara", tree.Find("children.0").AsString())
+	suite.Equal("Alex", tree.Find("children.1").AsString())
+
+	node = tree.Find("friends.1")
+	suite.Equal(Object, node.Type)
+	d, _ := node.MarshalJSON()
+	suite.Equal(`{"first":"Roger","last":"Craig","age":68,"nets":["fb","tw"]}`, string(d))
+
+	node = tree.Find("friends.1.first")
+	suite.Equal("Roger", node.AsString())
+
+	node = tree.Find("friends.#.age")
+	d, _ = node.MarshalJSON()
+	suite.Equal(`[44,68,47]`, string(d))
+}
+
+func (suite *JSONTreeTestSuite) TestFindAndModify() {
+	jsonStr := `{
+  "name": {"first": "Tom", "last": "Anderson"},
+  "age":37,
+  "children": ["Sara","Alex","Jack"],
+  "fav.movie": "Deer Hunter",
+  "friends": [
+    {"first": "Dale", "last": "Murphy", "age": 44, "nets": ["ig", "fb", "tw"]},
+    {"first": "Roger", "last": "Craig", "age": 68, "nets": ["fb", "tw"]},
+    {"first": "Jane", "last": "Murphy", "age": 47, "nets": ["ig", "tw"]}
+  ]
+}`
+	tree, err := Decode([]byte(jsonStr))
+	suite.NoError(err)
+	tree.Find("age").SetInt(120)
+	suite.Equal(int64(120), tree.Find("age").AsInt())
+
+	tree.Find("name.last").SetString("V")
+	suite.Equal("V", tree.Find("name.last").AsString())
+
+	for _, sub := range tree.Find("friends.#.last").ArrayValues {
+		sub.SetString("LAST")
+	}
+	suite.Equal(`["LAST","LAST","LAST"]`, tree.Find("friends.#.last").AsTree().JSONString())
+}
+
+func (suite *JSONTreeTestSuite) TestFindWithExtraDotPrefix() {
+	jsonStr := `{
+  "name": {"first": "Tom", "last": "Anderson"},
+  "age":37,
+  "children": ["Sara","Alex","Jack"],
+  "fav.movie": "Deer Hunter",
+  "friends": [
+    {"first": "Dale", "last": "Murphy", "age": 44, "nets": ["ig", "fb", "tw"]},
+    {"first": "Roger", "last": "Craig", "age": 68, "nets": ["fb", "tw"]},
+    {"first": "Jane", "last": "Murphy", "age": 47, "nets": ["ig", "tw"]}
+  ]
+}`
+	tree, err := Decode([]byte(jsonStr))
+	suite.NoError(err)
+
+	suite.Equal("Tom", tree.Find("name.first").AsString())
+	suite.Equal("Tom", tree.Find(".name.first").AsString())
+}
+
+func (suite *JSONTreeTestSuite) TestFindNothing() {
+	jsonStr := `{
+  "name": {"first": "Tom", "last": null},
+  "age":37,
+  "children": ["Sara","Alex","Jack"],
+  "children1": [],
+  "fav.movie": "Deer Hunter",
+  "friends": [
+    {"first": "Dale", "last": "Murphy", "age": 44, "nets": ["ig", "fb", "tw"]},
+    {"first": "Roger", "last": "Craig", "age": 68, "nets": ["fb", "tw"]},
+    {"first": "Jane", "last": "Murphy", "age": 47, "nets": ["ig", "tw"]}
+  ]
+}`
+	tree, err := Decode([]byte(jsonStr))
+	suite.NoError(err)
+
+	suite.Nil(tree.Find("name.first1"))
+	suite.Equal(Array, tree.Find("children1.#").Type)
+	suite.Len(tree.Find("children1.#").ArrayValues, 0)
+}
+
+func (suite *JSONTreeTestSuite) TestFindEmptyPath() {
+	jsonStr := `{
+  "name": {"first": "Tom", "last": "Anderson"},
+  "age":37,
+  "children": ["Sara","Alex","Jack"],
+  "fav.movie": "Deer Hunter",
+  "friends": [
+    {"first": "Dale", "last": "Murphy", "age": 44, "nets": ["ig", "fb", "tw"]},
+    {"first": "Roger", "last": "Craig", "age": 68, "nets": ["fb", "tw"]},
+    {"first": "Jane", "last": "Murphy", "age": 47, "nets": ["ig", "tw"]}
+  ]
+}`
+	tree, err := Decode([]byte(jsonStr))
+	suite.NoError(err)
+
+	suite.Equal(tree.Root, tree.Find(""))
+}
+
+func (suite *JSONTreeTestSuite) TestFindNothingIfPathTooLong() {
+	jsonStr := `{
+  "name": {"first": "Tom", "last": "Anderson"},
+  "age":37,
+  "children": ["Sara","Alex","Jack"],
+  "fav.movie": "Deer Hunter",
+  "friends": [
+    {"first": "Dale", "last": "Murphy", "age": 44, "nets": ["ig", "fb", "tw"]},
+    {"first": "Roger", "last": "Craig", "age": 68, "nets": ["fb", "tw"]},
+    {"first": "Jane", "last": "Murphy", "age": 47, "nets": ["ig", "tw"]}
+  ]
+}`
+	tree, err := Decode([]byte(jsonStr))
+	suite.NoError(err)
+
+	suite.Nil(tree.Find("name.first.nothing"))
+}
+
+func (suite *JSONTreeTestSuite) TestFindNull() {
+	jsonStr := `{
+  "name": {"first": "Tom", "last": null},
+  "age":37,
+  "children": ["Sara","Alex","Jack"],
+  "fav.movie": "Deer Hunter",
+  "friends": [
+    {"first": "Dale", "last": "Murphy", "age": 44, "nets": ["ig", "fb", "tw"]},
+    {"first": "Roger", "last": "Craig", "age": 68, "nets": ["fb", "tw"]},
+    {"first": "Jane", "last": "Murphy", "age": 47, "nets": ["ig", "tw"]}
+  ]
+}`
+	tree, err := Decode([]byte(jsonStr))
+	suite.NoError(err)
+
+	suite.Equal(Null, tree.Find("name.last").Type)
+}
+
+func (suite *JSONTreeTestSuite) TestFindSimpleJSON() {
+	tree, err := Decode([]byte(`1`))
+	suite.NoError(err)
+	suite.Equal(int64(1), tree.Find("").AsInt())
+
+	tree, err = Decode([]byte(`"string"`))
+	suite.NoError(err)
+	suite.Equal("string", tree.Find("").AsString())
+	suite.Nil(tree.Find("a"))
+}
+
+type CustomMap map[string]interface{}
+
+func (cm CustomMap) MarshalJSON() ([]byte, error) {
+	t := make(map[string]interface{})
+	for k := range cm {
+		t[strings.ToUpper(k)] = cm[k]
+	}
+	return json.Marshal(t)
+}
+
+func (suite *JSONTreeTestSuite) TestConvertCustomObject() {
+	m := CustomMap{"a": 1}
+	tree, err := ConvertToJSONTree(m)
+	suite.NoError(err)
+	data, err := tree.MarshalJSON()
+	suite.NoError(err)
+	suite.Equal(`{"A":1}`, string(data))
+}
+
+type CustomString string
+
+func (cm CustomString) MarshalJSON() ([]byte, error) {
+	return json.Marshal(strings.ToUpper(string(cm)))
+}
+
+func (suite *JSONTreeTestSuite) TestConvertCustomString() {
+	m := CustomString("a")
+	tree, err := ConvertToJSONTree(m)
+	suite.NoError(err)
+	data, err := tree.MarshalJSON()
+	suite.NoError(err)
+	suite.Equal(`"A"`, string(data))
+}
+
+type CustomStruct struct {
+	X int
+}
+
+func (cm CustomStruct) MarshalJSON() ([]byte, error) {
+	return json.Marshal(strconv.FormatInt(int64(cm.X), 10))
+}
+
+func (suite *JSONTreeTestSuite) TestConvertCustomStruct() {
+	m := CustomStruct{X: 100}
+	tree, err := ConvertToJSONTree(m)
+	suite.NoError(err)
+	data, err := tree.MarshalJSON()
+	suite.NoError(err)
+	suite.Equal(`"100"`, string(data))
+}
+
+type CustomComplextStruct struct {
+	Embed CustomStruct
+	EMap  CustomMap
+}
+
+func (suite *JSONTreeTestSuite) TestConvertCustomComplexStruct() {
+	m := CustomComplextStruct{
+		Embed: CustomStruct{X: 123},
+		EMap:  CustomMap{"Ab": 2},
+	}
+	tree, err := ConvertToJSONTree(m)
+	suite.NoError(err)
+	data, err := tree.MarshalJSON()
+	suite.NoError(err)
+	suite.Equal(`{"Embed":"123","EMap":{"AB":2}}`, string(data))
 }

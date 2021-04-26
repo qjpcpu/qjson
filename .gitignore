@@ -1,4 +1,5 @@
 /test_feed
+/.idea
 memprofile.out
 profile.out
 qjson.test

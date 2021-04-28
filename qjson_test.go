@@ -997,3 +997,56 @@ func (suite *JSONTreeTestSuite) TestConvertCustomComplexStruct() {
 	suite.NoError(err)
 	suite.Equal(`{"Embed":"123","EMap":{"AB":2}}`, string(data))
 }
+
+func (suite *JSONTreeTestSuite) TestRemove() {
+	jsonStr := `{
+  "name": {"first": "Tom", "last": "Anderson"},
+  "age":37,
+  "children": ["Sara","Alex","Jack"],
+  "fav.movie": "Deer Hunter",
+  "friends": [
+    {"first": "Dale", "last": "Murphy", "age": 44, "nets": ["ig", "fb", "tw"]},
+    {"first": "Roger", "last": "Craig", "age": 68, "nets": ["fb", "tw"]},
+    {"first": "Jane", "last": "Murphy", "age": 47, "nets": ["ig", "tw"]}
+  ]
+}`
+	tree, err := Decode([]byte(jsonStr))
+	suite.NoError(err)
+
+	tree.Remove("age")
+	suite.Nil(tree.Find("age"))
+
+	tree.Remove("name.first")
+	suite.Nil(tree.Find("name.first"))
+
+	tree.Remove("children.1")
+	suite.Equal(`["Sara","Jack"]`, tree.Find("children").AsJSON())
+}
+
+func (suite *JSONTreeTestSuite) TestRemoveArray() {
+	jsonStr := `{
+  "name": {"first": "Tom", "last": "Anderson"},
+  "age":37,
+  "children": ["Sara","Alex","Jack"],
+  "fav.movie": "Deer Hunter",
+  "friends": [
+    {"first": "Dale", "last": "Murphy", "age": 44, "nets": ["ig", "fb", "tw"]},
+    {"first": "Roger", "last": "Craig", "age": 68, "nets": ["fb", "tw"]},
+    {"first": "Jane", "last": "Murphy", "age": 47, "nets": ["ig", "tw"]}
+  ]
+}`
+	tree, err := Decode([]byte(jsonStr))
+	suite.NoError(err)
+	tree.Remove("children")
+	suite.Nil(tree.Find("children"))
+
+	tree, err = Decode([]byte(jsonStr))
+	suite.NoError(err)
+	tree.Remove("children.#")
+	suite.Len(tree.Find("children").ArrayValues,0)
+
+	tree, err = Decode([]byte(`[1]`))
+	suite.NoError(err)
+	tree.Remove("#")
+	suite.Len(tree.Root.ArrayValues,0)
+}

@@ -51,3 +51,24 @@ func makeNewTree() *JSONTree {
 func (tree *JSONTree) Find(path string) *Node {
 	return findNode(tree.Root, makeStPath(path))
 }
+
+// Remove json node
+func (tree *JSONTree) Remove(path string) {
+	paths := makeStPath(path)
+	if len(paths) == 0 {
+		return
+	}
+	if node := findNode(tree.Root, paths[:len(paths)-1]); node != nil {
+		lastKey := paths[len(paths)-1]
+		switch node.Type {
+		case Object:
+			node.RemoveObjectElemByKey(lastKey.Name)
+		case Array:
+			if lastKey.isInteger() {
+				node.RemoveArrayElemByIndex(lastKey.asInteger())
+			}else if lastKey.isArrayElemSelector(){
+				node.clearArray()
+			}
+		}
+	}
+}

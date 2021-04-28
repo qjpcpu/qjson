@@ -61,7 +61,7 @@ friends.1.first        "Roger"          // tree.Find(`friends.1.first`).AsString
 
 **** Escape character
 
-Special purpose characters, such as `.`, can be escaped with `\`.
+Special purpose characters, such as ., can be escaped with \.
 
 #+begin_src go
 fav\.movie             "Deer Hunter"
@@ -80,7 +80,10 @@ tree.Find(`fav\.movie`).AsString()  // "Deer Hunter" no need to escape the slash
 #+begin_src go
 // rename Tom to Link
 tree.Find(`name.first`).SetString("Link")
+// change age to 12
+tree.Find(`age`).SetInt(12)
 #+end_src
+
 ** benchmark
 
 #+begin_src 

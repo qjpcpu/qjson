@@ -123,6 +123,33 @@ func (n *Node) RemoveObjectElemByKey(key string) bool {
 	return delCnt > 0
 }
 
+// RemoveArrayElemByIndex remove array element
+func (n *Node) RemoveArrayElemByIndex(idx int) bool {
+	if n.Type != Null && n.Type != Array {
+		panic("node type should be Array")
+	}
+	size := len(n.ArrayValues)
+	if idx < 0 || idx >= size {
+		return false
+	}
+	nodePool.Put(n.ArrayValues[idx])
+	for i := idx; i < size-1; i++ {
+		n.ArrayValues[i] = n.ArrayValues[i+1]
+	}
+	n.ArrayValues = n.ArrayValues[:size-1]
+	return true
+}
+
+func (n *Node) clearArray()  {
+	if n.Type != Null && n.Type != Array {
+		panic("node type should be Array")
+	}
+	for i := 0; i < len(n.ArrayValues); i++ {
+		nodePool.Put(n.ArrayValues[i])
+	}
+	n.ArrayValues = n.ArrayValues[:0]
+}
+
 // SetObjectStringElem set kv pair
 func (n *Node) SetObjectStringElem(key, value string) *Node {
 	for _, elem := range n.ObjectValues {

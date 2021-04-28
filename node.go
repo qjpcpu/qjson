@@ -115,9 +115,6 @@ func (n *Node) RemoveObjectElemByKey(key string) bool {
 		}
 	}
 	if delCnt > 0 {
-		for i := 0; i < delCnt; i++ {
-			objectPool.Put(n.ObjectValues[size-i-1])
-		}
 		n.ObjectValues = n.ObjectValues[:size-delCnt]
 	}
 	return delCnt > 0
@@ -132,7 +129,6 @@ func (n *Node) RemoveArrayElemByIndex(idx int) bool {
 	if idx < 0 || idx >= size {
 		return false
 	}
-	nodePool.Put(n.ArrayValues[idx])
 	for i := idx; i < size-1; i++ {
 		n.ArrayValues[i] = n.ArrayValues[i+1]
 	}
@@ -140,14 +136,11 @@ func (n *Node) RemoveArrayElemByIndex(idx int) bool {
 	return true
 }
 
-func (n *Node) clearArray()  {
+func (n *Node) clearArray() {
 	if n.Type != Null && n.Type != Array {
 		panic("node type should be Array")
 	}
-	for i := 0; i < len(n.ArrayValues); i++ {
-		nodePool.Put(n.ArrayValues[i])
-	}
-	n.ArrayValues = n.ArrayValues[:0]
+	n.ArrayValues = nil
 }
 
 // SetObjectStringElem set kv pair
@@ -384,12 +377,7 @@ func (n *Node) AsFloat() float64 {
 
 /* marshalers */
 
-// MarshalJSON node is json marshaller too
-func (n *Node) MarshalJSON() ([]byte, error) {
-	buf := bytesPool.Get().(*bytes.Buffer)
-	buf.Reset()
-	defer bytesPool.Put(buf)
-	var err error
+func nodeMarshalJSON(buf *bytes.Buffer, n *Node) {
 	switch n.Type {
 	case Null:
 		buf.WriteString(nullVal)
@@ -406,11 +394,7 @@ func (n *Node) MarshalJSON() ([]byte, error) {
 	case Object:
 		buf.WriteByte(objectStart)
 		for i, elem := range n.ObjectValues {
-			v, err := elem.MarshalJSON()
-			if err != nil {
-				return nil, err
-			}
-			buf.Write(v)
+			objectElemMarshalJSON(buf, elem)
 			if i < len(n.ObjectValues)-1 {
 				buf.WriteByte(commaChar)
 			}
@@ -419,35 +403,35 @@ func (n *Node) MarshalJSON() ([]byte, error) {
 	case Array:
 		buf.WriteByte(arrayStart)
 		for i, elem := range n.ArrayValues {
-			v, err := elem.MarshalJSON()
-			if err != nil {
-				return nil, err
-			}
-			buf.Write(v)
+			nodeMarshalJSON(buf, elem)
 			if i < len(n.ArrayValues)-1 {
 				buf.WriteByte(commaChar)
 			}
 		}
 		buf.WriteByte(arrayEnd)
 	}
-	return copyBytes(buf.Bytes()), err
 }
 
-// MarshalJSON object node is json marshaller
-func (e ObjectElem) MarshalJSON() ([]byte, error) {
+// MarshalJSON node is json marshaller too
+func (n *Node) MarshalJSON() ([]byte, error) {
 	buf := bytesPool.Get().(*bytes.Buffer)
 	buf.Reset()
 	defer bytesPool.Put(buf)
-	key, err := e.Key.MarshalJSON()
-	if err != nil {
-		return nil, err
-	}
-	val, err := e.Value.MarshalJSON()
-	if err != nil {
-		return nil, err
-	}
-	buf.Write(key)
-	buf.WriteByte(colonChar)
-	buf.Write(val)
+	nodeMarshalJSON(buf, n)
 	return copyBytes(buf.Bytes()), nil
+}
+
+// MarshalJSON object node is json marshaller
+func (e *ObjectElem) MarshalJSON() ([]byte, error) {
+	buf := bytesPool.Get().(*bytes.Buffer)
+	buf.Reset()
+	defer bytesPool.Put(buf)
+	objectElemMarshalJSON(buf, e)
+	return copyBytes(buf.Bytes()), nil
+}
+
+func objectElemMarshalJSON(buf *bytes.Buffer, e *ObjectElem) {
+	nodeMarshalJSON(buf, e.Key)
+	buf.WriteByte(colonChar)
+	nodeMarshalJSON(buf, e.Value)
 }

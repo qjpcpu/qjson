@@ -15,10 +15,21 @@ import (
 
 type JSONTreeTestSuite struct {
 	suite.Suite
+	jsonFeed map[string]string
 }
 
 func (suite *JSONTreeTestSuite) BeforeTest(suiteName, testName string) {
-
+	suite.jsonFeed = make(map[string]string)
+	files, _ := ioutil.ReadDir("./test_feed")
+	if len(files) > 0 {
+		suite.T().Logf("there are %d json files for testing", len(files))
+	}
+	for _, file := range files {
+		filename := "./test_feed/" + file.Name()
+		data, err := ioutil.ReadFile(filename)
+		suite.Nil(err, "read test file %s", filename)
+		suite.jsonFeed[file.Name()] = string(data)
+	}
 }
 
 func (suite *JSONTreeTestSuite) AfterTest(suiteName, testName string) {
@@ -29,11 +40,24 @@ func TestJSONTree(t *testing.T) {
 }
 
 func (suite *JSONTreeTestSuite) ValidJSON(data []byte) {
-	tree, err := Decode(data)
+	var tree1, tree2 *JSONTree
+	var err error
+	tree1, err = Decode(data)
 	suite.Nil(err)
+
 	m := make(map[string]interface{})
 	suite.Nil(json.Unmarshal(data, &m))
-	suite.compareTreeWithMap(m, tree.Root.ObjectValues)
+	suite.compareTreeWithMap(m, tree1.Root.ObjectValues)
+
+	// compare again
+	data, err = tree1.MarshalJSON()
+	suite.Nil(err)
+	tree1.Release()
+
+	tree2, err = Decode(data)
+	suite.Nil(err)
+	suite.compareTreeWithMap(m, tree2.Root.ObjectValues)
+	tree2.Release()
 }
 
 func (suite *JSONTreeTestSuite) compareTreeWithArray(m []interface{}, elems []*Node) {
@@ -69,6 +93,7 @@ func (suite *JSONTreeTestSuite) compareTreeWithArray(m []interface{}, elems []*N
 func (suite *JSONTreeTestSuite) compareTreeWithMap(m map[string]interface{}, objectValues []*ObjectElem) {
 	suite.Equal(len(m), len(objectValues))
 	for k, v := range m {
+		/* find key */
 		var tv *Node
 		var found bool
 		for _, kv := range objectValues {
@@ -84,6 +109,7 @@ func (suite *JSONTreeTestSuite) compareTreeWithMap(m map[string]interface{}, obj
 			suite.True(found, "should find key %s", k)
 			return
 		}
+		/* match value */
 		switch tv.Type {
 		case Null:
 			suite.Nil(v)
@@ -336,15 +362,8 @@ func (suite *JSONTreeTestSuite) TestDecodeComplexJSONWithStd() {
 }
 
 func (suite *JSONTreeTestSuite) TestWithStdLib() {
-	files, _ := ioutil.ReadDir("./test_feed")
-	if len(files) > 0 {
-		suite.T().Logf("there are %d json files for testing", len(files))
-	}
-	for _, file := range files {
-		filename := "./test_feed/" + file.Name()
-		data, err := ioutil.ReadFile(filename)
-		suite.Nil(err, "read test file %s", filename)
-		suite.ValidJSON(data)
+	for _, js := range suite.jsonFeed {
+		suite.ValidJSON([]byte(js))
 	}
 }
 
@@ -1043,10 +1062,10 @@ func (suite *JSONTreeTestSuite) TestRemoveArray() {
 	tree, err = Decode([]byte(jsonStr))
 	suite.NoError(err)
 	tree.Remove("children.#")
-	suite.Len(tree.Find("children").ArrayValues,0)
+	suite.Len(tree.Find("children").ArrayValues, 0)
 
 	tree, err = Decode([]byte(`[1]`))
 	suite.NoError(err)
 	tree.Remove("#")
-	suite.Len(tree.Root.ArrayValues,0)
+	suite.Len(tree.Root.ArrayValues, 0)
 }

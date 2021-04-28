@@ -90,11 +90,12 @@ tree.Find(`age`).SetInt(12)
 goos: darwin
 goarch: amd64
 pkg: github.com/qjpcpu/qjson
-BenchmarkUnmarshal-12             161134              7366 ns/op               8 B/op          1 allocs/op
-BenchmarkUnmarshalStd-12           53988             21761 ns/op            9352 B/op        200 allocs/op
-BenchmarkMarshal-12                73990             16312 ns/op            8641 B/op        159 allocs/op
-BenchmarkMarshalStd-12             50682             22141 ns/op           10151 B/op        215 allocs/op
+cpu: Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz
+BenchmarkMarshalQJSON-12          735711              1631 ns/op            1024 B/op          1 allocs/op
+BenchmarkUnmarshalQJSON-12         94591             12673 ns/op            1039 B/op         58 allocs/op
+BenchmarkMarshalStd-12             50536             23592 ns/op            9979 B/op        215 allocs/op
+BenchmarkUnmarshalStd-12           54302             21827 ns/op            9152 B/op        195 allocs/op
 PASS
-ok      github.com/qjpcpu/qjson 6.098s
+ok      github.com/qjpcpu/qjson 8.084s
 #+end_src
 

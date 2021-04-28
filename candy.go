@@ -46,6 +46,13 @@ func copyBytes(src []byte) []byte {
 	return dest
 }
 
+func min(a, b int) int {
+	if a > b {
+		return b
+	}
+	return a
+}
+
 // CreateObjectNode create object node
 func CreateObjectNode() *Node {
 	node := CreateNode()

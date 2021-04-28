@@ -5,26 +5,7 @@ import (
 	"testing"
 )
 
-func BenchmarkUnmarshal(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		if tree, err := Decode(textTpl); err != nil {
-			b.Fatal(err)
-		} else {
-			tree.Release()
-		}
-	}
-}
-
-func BenchmarkUnmarshalStd(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		m := make(map[string]interface{})
-		if err := json.Unmarshal(textTpl, &m); err != nil {
-			b.Fatal(err)
-		}
-	}
-}
-
-func BenchmarkMarshal(b *testing.B) {
+func BenchmarkMarshalQJSON(b *testing.B) {
 	t, err := Decode(textTpl)
 	if err != nil {
 		b.Fatal(err)
@@ -37,6 +18,16 @@ func BenchmarkMarshal(b *testing.B) {
 	}
 }
 
+func BenchmarkUnmarshalQJSON(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		if tree, err := Decode(textTpl); err != nil {
+			b.Fatal(err)
+		} else {
+			tree.Release()
+		}
+	}
+}
+
 func BenchmarkMarshalStd(b *testing.B) {
 	m := make(map[string]interface{})
 	if err := json.Unmarshal(textTpl, &m); err != nil {
@@ -45,6 +36,15 @@ func BenchmarkMarshalStd(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		if _, err := json.Marshal(m); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+func BenchmarkUnmarshalStd(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		m := make(map[string]interface{})
+		if err := json.Unmarshal(textTpl, &m); err != nil {
 			b.Fatal(err)
 		}
 	}

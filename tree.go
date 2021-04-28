@@ -66,7 +66,7 @@ func (tree *JSONTree) Remove(path string) {
 		case Array:
 			if lastKey.isInteger() {
 				node.RemoveArrayElemByIndex(lastKey.asInteger())
-			}else if lastKey.isArrayElemSelector(){
+			} else if lastKey.isArrayElemSelector() {
 				node.clearArray()
 			}
 		}

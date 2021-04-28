@@ -2,6 +2,7 @@ package qjson
 
 import (
 	"bytes"
+	"encoding/json"
 	"strconv"
 	"strings"
 )
@@ -304,6 +305,12 @@ func (n *Node) SetInt(num int64) *Node {
 func (n *Node) SetUint(num uint64) *Node {
 	n.Value = strconv.FormatUint(num, 10)
 	return n
+}
+
+// AsJSON as json string
+func (n *Node) AsJSON() string {
+	data, _ := json.Marshal(n)
+	return string(data)
 }
 
 // AsString as string

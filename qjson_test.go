@@ -822,7 +822,7 @@ func (suite *JSONTreeTestSuite) TestFindAndModify() {
 	for _, sub := range tree.Find("friends.#.last").ArrayValues {
 		sub.SetString("LAST")
 	}
-	suite.Equal(`["LAST","LAST","LAST"]`, tree.Find("friends.#.last").AsTree().JSONString())
+	suite.Equal(`["LAST","LAST","LAST"]`, tree.Find("friends.#.last").AsJSON())
 }
 
 func (suite *JSONTreeTestSuite) TestFindWithExtraDotPrefix() {

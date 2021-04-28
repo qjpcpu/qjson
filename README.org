@@ -48,15 +48,15 @@ The following QJSON Paths evaluate to the accompanying values.
 
 In many cases you'll just want to retreive values by object name or array index.
 
-#+begin_src
-name.last              "Anderson"      tree.Find(`name.last`).AsString()
-name.first             "Tom"           tree.Find(`name.first`).AsString()
-age                    37              tree.Find(`age`).AsInt()
-children               ["Sara","Alex","Jack"]          tree.Find(`children`).ArrayValues
-children.0             "Sara"      tree.Find(`children.0`).AsString()
-children.1             "Alex"      tree.Find(`children.1`).AsString()
-friends.1              {"first": "Roger", "last": "Craig", "age": 68}    tree.Find(`friends.1`).ObjectValues
-friends.1.first        "Roger"          tree.Find(`friends.1.first`).AsString()
+#+begin_src go
+name.last              "Anderson"      // tree.Find(`name.last`).AsString()
+name.first             "Tom"           // tree.Find(`name.first`).AsString()
+age                    37              // tree.Find(`age`).AsInt()
+children               ["Sara","Alex","Jack"]          // tree.Find(`children`).AsJSON()
+children.0             "Sara"      // tree.Find(`children.0`).AsString()
+children.1             "Alex"      // tree.Find(`children.1`).AsString()
+friends.1              {"first": "Roger", "last": "Craig", "age": 68}    // tree.Find(`friends.1`).AsJSON()
+friends.1.first        "Roger"          // tree.Find(`friends.1.first`).AsString()
 #+end_src
 
 **** Escape character

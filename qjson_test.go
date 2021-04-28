@@ -758,6 +758,7 @@ func (suite *JSONTreeTestSuite) TestSimpleFind() {
 
 	suite.Equal("Deer Hunter1", tree.Find("favmovie").AsString())
 	suite.Equal("Deer Hunter", tree.Find(`fav\.movie`).AsString())
+	suite.Equal("Deer Hunter", tree.Find("fav\\.movie").AsString())
 }
 
 func (suite *JSONTreeTestSuite) TestFindArray() {

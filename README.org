@@ -48,15 +48,15 @@ The following QJSON Paths evaluate to the accompanying values.
 
 In many cases you'll just want to retreive values by object name or array index.
 
-#+begin_src go
-name.last              "Anderson"
-name.first             "Tom"
-age                    37
-children               ["Sara","Alex","Jack"]
-children.0             "Sara"
-children.1             "Alex"
-friends.1              {"first": "Roger", "last": "Craig", "age": 68}
-friends.1.first        "Roger"
+#+begin_src
+name.last              "Anderson"      tree.Find(`name.last`).AsString()
+name.first             "Tom"           tree.Find(`name.first`).AsString()
+age                    37              tree.Find(`age`).AsInt()
+children               ["Sara","Alex","Jack"]          tree.Find(`children`).ArrayValues
+children.0             "Sara"      tree.Find(`children.0`).AsString()
+children.1             "Alex"      tree.Find(`children.1`).AsString()
+friends.1              {"first": "Roger", "last": "Craig", "age": 68}    tree.Find(`friends.1`).ObjectValues
+friends.1.first        "Roger"          tree.Find(`friends.1.first`).AsString()
 #+end_src
 
 **** Escape character
@@ -71,12 +71,16 @@ You'll also need to make sure that the `\` character is correctly escaped when h
 
 #+begin_src go
 // Go
-node := tree.Find("fav\\.movie")  // must escape the slash
-node := tree.Find(json, `fav\.movie`)   // no need to escape the slash
+tree.Find("fav\\.movie").AsString() // "Deer Hunter" must escape the slash
+tree.Find(`fav\.movie`).AsString()  // "Deer Hunter" no need to escape the slash
 #+end_src
 
 ** modify
 
+#+begin_src go
+// rename Tom to Link
+tree.Find(`name.first`).SetString("Link")
+#+end_src
 ** benchmark
 
 #+begin_src 

@@ -13,7 +13,7 @@ err := json.Unmarshal([]byte(`{"a":1}`),&tree)
 ** marshal JSONTree to bytes
 
 #+begin_src
-err := json.Marshal(tree)
+data, err := json.Marshal(tree)
 #+end_src
 
 ** query

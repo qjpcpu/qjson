@@ -77,7 +77,7 @@ func makeStPath(p string) []stPath {
 			paths = append(paths, stPath{Name: removeByte(string(data[start:]), 0)})
 			start = i + 1
 		}
-		i += 1
+		i++
 	}
 	return paths
 }

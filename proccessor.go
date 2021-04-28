@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	nosenseChars = mapToSlice(map[byte]bool{
+	nonsenseChars = mapToSlice(map[byte]bool{
 		'\n': true,
 		' ':  true,
 		'\t': true,
@@ -77,16 +77,16 @@ func fillObjectNode(jsonBytes []byte, offset int, node *Node) (int, error) {
 	node.Type = Object
 	offset++
 	for {
-		if noffset := searchFirstValidChar(jsonBytes, offset); noffset == -1 {
+		if nextOffset := searchFirstValidChar(jsonBytes, offset); nextOffset == -1 {
 			return 0, fmt.Errorf("unexpected json char %s", jsonBytes[offset:])
-		} else if jsonBytes[noffset] == objectEnd {
-			offset = noffset
+		} else if jsonBytes[nextOffset] == objectEnd {
+			offset = nextOffset
 			break
-		} else if jsonBytes[noffset] == commaChar {
-			offset = noffset + 1
+		} else if jsonBytes[nextOffset] == commaChar {
+			offset = nextOffset + 1
 			continue
 		} else {
-			offset = noffset
+			offset = nextOffset
 		}
 		var err error
 
@@ -104,9 +104,9 @@ func fillObjectNode(jsonBytes []byte, offset int, node *Node) (int, error) {
 			return 0, fmt.Errorf("unexpected json char %s", jsonBytes[offset:])
 		}
 		/* should find : */
-		if noffset := nextValueShouldBe(jsonBytes, offset, colonChar); noffset == -1 {
+		if nextOffset := nextValueShouldBe(jsonBytes, offset, colonChar); nextOffset == -1 {
 			return 0, fmt.Errorf("expect :, unexpected json char %s", jsonBytes[offset:])
-		} else if offset = searchFirstValidChar(jsonBytes, noffset+1); offset == -1 {
+		} else if offset = searchFirstValidChar(jsonBytes, nextOffset+1); offset == -1 {
 			return 0, fmt.Errorf("expect object value, unexpected json char %s", jsonBytes[offset:])
 		}
 
@@ -138,16 +138,16 @@ func fillArrayNode(jsonBytes []byte, offset int, node *Node) (int, error) {
 	node.Type = Array
 	offset++
 	for {
-		if noffset := searchFirstValidChar(jsonBytes, offset); noffset == -1 {
+		if nextOffset := searchFirstValidChar(jsonBytes, offset); nextOffset == -1 {
 			return 0, fmt.Errorf("unexpected json char %s", jsonBytes[offset:])
-		} else if jsonBytes[noffset] == arrayEnd {
-			offset = noffset
+		} else if jsonBytes[nextOffset] == arrayEnd {
+			offset = nextOffset
 			break
-		} else if jsonBytes[noffset] == commaChar {
-			offset = noffset + 1
+		} else if jsonBytes[nextOffset] == commaChar {
+			offset = nextOffset + 1
 			continue
 		} else {
-			offset = noffset
+			offset = nextOffset
 		}
 		var err error
 		elem := CreateNode()
@@ -239,7 +239,7 @@ func fillStringNode(jsonBytes []byte, offset int, node *Node) int {
 func searchFirstValidChar(jsonBytes []byte, offset int) int {
 	for i := offset; i < len(jsonBytes); i++ {
 		b := jsonBytes[i]
-		if nosenseChars.Contains(b) {
+		if nonsenseChars.Contains(b) {
 			continue
 		}
 		return i

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"strconv"
-	"strings"
 )
 
 // NodeType describe a json node type
@@ -88,8 +87,8 @@ func (n *Node) Find(key string) *Node {
 	return findNode(n, makeStPath(key))
 }
 
-// FindObjectElemByKey find object value by key
-func (n *Node) FindObjectElemByKey(key string) *ObjectElem {
+// GetObjectElemByKey get object value by key
+func (n *Node) GetObjectElemByKey(key string) *ObjectElem {
 	if n.Type != Null && n.Type != Object {
 		panic("node type should be object")
 	}
@@ -97,27 +96,6 @@ func (n *Node) FindObjectElemByKey(key string) *ObjectElem {
 		if kv.Key.AsString() == key {
 			return n.ObjectValues[i]
 		}
-	}
-	return nil
-}
-
-// Deprecated, use tree.Find
-// FindObjectElemByKeyRecursive find object value by key
-func (n *Node) FindObjectElemByKeyRecursive(keyWithDot string) *ObjectElem {
-	keys := strings.Split(keyWithDot, ".")
-	current, cnt := n, 0
-	var elem *ObjectElem
-	for _, key := range keys {
-		cnt++
-		if elem = current.FindObjectElemByKey(key); elem == nil {
-			break
-		}
-		if current = elem.Value; current == nil {
-			break
-		}
-	}
-	if cnt == len(keys) {
-		return elem
 	}
 	return nil
 }
@@ -249,7 +227,7 @@ func (n *Node) AddArrayElem(elem *Node) *Node {
 	return n
 }
 
-// AsMap create map for chilren
+// AsMap create map for children
 func (n *Node) AsMap() map[string]*Node {
 	if n.Type != Null && n.Type != Object {
 		panic("node type should be object")
@@ -261,7 +239,7 @@ func (n *Node) AsMap() map[string]*Node {
 	return m
 }
 
-// SetRawValue to node
+// SetRawValue set raw json string to node
 func (n *Node) SetRawValue(str string) *Node {
 	n.Value = str
 	return n

@@ -27,6 +27,7 @@ var (
 	}
 )
 
+// Formatter json with indent
 type Formatter struct {
 	Indent int
 }

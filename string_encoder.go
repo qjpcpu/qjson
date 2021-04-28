@@ -1,4 +1,4 @@
-/* most of code here is copyed from std lib */
+/*Package qjson most of code here is copyed from std lib */
 package qjson
 
 import (

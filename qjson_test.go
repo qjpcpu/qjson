@@ -21,9 +21,6 @@ type JSONTreeTestSuite struct {
 func (suite *JSONTreeTestSuite) BeforeTest(suiteName, testName string) {
 	suite.jsonFeed = make(map[string]string)
 	files, _ := ioutil.ReadDir("./test_feed")
-	if len(files) > 0 {
-		suite.T().Logf("there are %d json files for testing", len(files))
-	}
 	for _, file := range files {
 		filename := "./test_feed/" + file.Name()
 		data, err := ioutil.ReadFile(filename)
@@ -39,15 +36,32 @@ func TestJSONTree(t *testing.T) {
 	suite.Run(t, &JSONTreeTestSuite{})
 }
 
+func (suite *JSONTreeTestSuite) TestWithStdLib() {
+	for _, js := range suite.jsonFeed {
+		suite.ValidJSON([]byte(js))
+	}
+}
+
 func (suite *JSONTreeTestSuite) ValidJSON(data []byte) {
+	compareFn := func(m interface{}, tree *JSONTree) {
+		if mv, ok := m.(map[string]interface{}); ok {
+			suite.compareTreeWithMap(mv, tree.Root.ObjectValues)
+		} else if av, ok := m.([]interface{}); ok {
+			suite.compareTreeWithArray(av, tree.Root.ArrayValues)
+		} else {
+			vv, err := json.Marshal(m)
+			suite.NoError(err)
+			suite.Equal(string(vv), tree.Root.Value)
+		}
+	}
 	var tree1, tree2 *JSONTree
 	var err error
 	tree1, err = Decode(data)
 	suite.Nil(err)
 
-	m := make(map[string]interface{})
+	var m interface{}
 	suite.Nil(json.Unmarshal(data, &m))
-	suite.compareTreeWithMap(m, tree1.Root.ObjectValues)
+	compareFn(m, tree1)
 
 	// compare again
 	data, err = tree1.MarshalJSON()
@@ -56,7 +70,7 @@ func (suite *JSONTreeTestSuite) ValidJSON(data []byte) {
 
 	tree2, err = Decode(data)
 	suite.Nil(err)
-	suite.compareTreeWithMap(m, tree2.Root.ObjectValues)
+	compareFn(m, tree2)
 	tree2.Release()
 }
 
@@ -359,12 +373,6 @@ func (suite *JSONTreeTestSuite) TestDecodeComplexJSONWithStd() {
 	var s string
 	json.Unmarshal([]byte(tree.Root.ObjectValues[0].Value.Value), &s)
 	suite.Equal(m["content"].(string), s)
-}
-
-func (suite *JSONTreeTestSuite) TestWithStdLib() {
-	for _, js := range suite.jsonFeed {
-		suite.ValidJSON([]byte(js))
-	}
 }
 
 func (suite *JSONTreeTestSuite) TestStringBytes() {

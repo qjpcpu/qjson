@@ -2,6 +2,7 @@ package qjson
 
 import (
 	"encoding/json"
+	"io/ioutil"
 	"testing"
 )
 
@@ -46,6 +47,193 @@ func BenchmarkUnmarshalStd(b *testing.B) {
 		m := make(map[string]interface{})
 		if err := json.Unmarshal(textTpl, &m); err != nil {
 			b.Fatal(err)
+		}
+	}
+}
+
+func BenchmarkParallel(b *testing.B) {
+	jsonFeed := make(map[string]string)
+	files, err := ioutil.ReadDir("./test_feed")
+	if err != nil {
+		return
+	}
+	for _, file := range files {
+		filename := "./test_feed/" + file.Name()
+		data, err := ioutil.ReadFile(filename)
+		if err != nil {
+			b.Fatalf("read test file %s %v", filename, err)
+		}
+		jsonFeed[file.Name()] = string(data)
+	}
+	jsonFeed["buildin"] = string(textTpl)
+
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			for _, js := range jsonFeed {
+				validJSON(b, []byte(js))
+			}
+		}
+	})
+}
+
+func validJSON(b *testing.B, data []byte) {
+	compareFn := func(m interface{}, tree *JSONTree) {
+		if mv, ok := m.(map[string]interface{}); ok {
+			compareTreeWithMap(b, mv, tree.Root.ObjectValues)
+		} else if av, ok := m.([]interface{}); ok {
+			compareTreeWithArray(b, av, tree.Root.ArrayValues)
+		} else {
+			vv, err := json.Marshal(m)
+			if err != nil {
+				b.Fatal(err)
+			}
+			if string(vv) != tree.Root.Value {
+				b.Fatalf("%s != %s", string(vv), tree.Root.Value)
+			}
+		}
+	}
+	var tree1, tree2 *JSONTree
+	var err error
+	tree1, err = Decode(data)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	var m interface{}
+	json.Unmarshal(data, &m)
+	compareFn(m, tree1)
+
+	// compare again
+	data, err = tree1.MarshalJSON()
+	if err != nil {
+		b.Fatal(err)
+	}
+	tree1.Release()
+
+	tree2, err = Decode(data)
+	if err != nil {
+		b.Fatal(err)
+	}
+	compareFn(m, tree2)
+	tree2.Release()
+}
+
+func compareTreeWithArray(b *testing.B, m []interface{}, elems []*Node) {
+	if len(m) != len(elems) {
+		b.Fatal("length not match")
+	}
+	for i, item := range m {
+		tv := elems[i]
+		switch elems[i].Type {
+		case Null:
+			if item != nil {
+				b.Fatal("item should be nil")
+			}
+		case String:
+			var s string
+			err := json.Unmarshal([]byte(tv.Value), &s)
+			if err != nil {
+				b.Fatal(err)
+			}
+			if item.(string) != s {
+				b.Fatalf("%v != %v", item.(string), s)
+			}
+		case Bool:
+			var s bool
+			err := json.Unmarshal([]byte(tv.Value), &s)
+			if err != nil {
+				b.Fatal(err)
+			}
+			if item.(bool) != s {
+				b.Fatalf("%v != %v", item.(bool), s)
+			}
+		case Integer, Float:
+			vs, _ := json.Marshal(item)
+			if string(vs) != tv.Value {
+				b.Fatalf("%s != %s", string(vs), tv.Value)
+			}
+		case Object:
+			sub, ok := item.(map[string]interface{})
+			if !ok {
+				b.Fatal("not ok")
+			}
+			compareTreeWithMap(b, sub, tv.ObjectValues)
+		case Array:
+			arr, ok := item.([]interface{})
+			if !ok {
+				b.Fatal("not ok")
+			}
+			compareTreeWithArray(b, arr, tv.ArrayValues)
+		}
+	}
+}
+
+func compareTreeWithMap(b *testing.B, m map[string]interface{}, objectValues []*ObjectElem) {
+	if len(m) != len(objectValues) {
+		b.Fatal("length not match")
+	}
+	for k, v := range m {
+		/* find key */
+		var tv *Node
+		var found bool
+		for _, kv := range objectValues {
+			var str string
+			err := json.Unmarshal([]byte(kv.Key.Value), &str)
+			if err != nil {
+				b.Fatal(err)
+			}
+			if k == str {
+				found = true
+				tv = kv.Value
+				break
+			}
+		}
+		if !found {
+			b.Fatalf("should find key %s", k)
+			return
+		}
+		/* match value */
+		switch tv.Type {
+		case Null:
+			if v != nil {
+				b.Fatal("should be nil")
+			}
+		case String:
+			var s string
+			err := json.Unmarshal([]byte(tv.Value), &s)
+			if err != nil {
+				b.Fatal(err)
+			}
+			if v.(string) != s {
+				b.Fatalf("%s != %s", v.(string), s)
+			}
+		case Bool:
+			var s bool
+			err := json.Unmarshal([]byte(tv.Value), &s)
+			if err != nil {
+				b.Fatal(err)
+			}
+			if v.(bool) != s {
+				b.Fatalf("%v != %v", v.(bool), s)
+			}
+		case Float, Integer:
+			vs, _ := json.Marshal(v)
+			if string(vs) != tv.Value {
+				b.Fatalf("%s != %s", string(vs), tv.Value)
+			}
+		case Object:
+			sub, ok := v.(map[string]interface{})
+			if !ok {
+				b.Fatal("should be ok")
+			}
+			compareTreeWithMap(b, sub, tv.ObjectValues)
+		case Array:
+			arr, ok := v.([]interface{})
+			if !ok {
+				b.Fatal("should be ok")
+			}
+			compareTreeWithArray(b, arr, tv.ArrayValues)
 		}
 	}
 }

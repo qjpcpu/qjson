@@ -49,12 +49,19 @@ func makeNewTree() *JSONTree {
 
 // Find json node/nodes by path selector
 func (tree *JSONTree) Find(path string) *Node {
-	return findNode(tree.Root, makeStPath(path))
+	p, ok := makeStPath(path)
+	if !ok {
+		return nil
+	}
+	return findNode(tree.Root, p)
 }
 
 // Remove json node
 func (tree *JSONTree) Remove(path string) {
-	paths := makeStPath(path)
+	paths, ok := makeStPath(path)
+	if !ok {
+		return
+	}
 	if len(paths) == 0 {
 		return
 	}

@@ -57,6 +57,9 @@ children.0             "Sara"      // tree.Find(`children.0`).AsString()
 children.1             "Alex"      // tree.Find(`children.1`).AsString()
 friends.1              {"first": "Roger", "last": "Craig", "age": 68}    // tree.Find(`friends.1`).AsJSON()
 friends.1.first        "Roger"          // tree.Find(`friends.1.first`).AsString()
+friends.#(nets.#(=="fb")).first     ["Dale","Roger","Jane"]  // = means contains, == means equal
+friends.#(nets.#(="f")).first    ["Dale","Roger"]  // = means contains, == means equal
+friends.#(last=Craig).first   ["Roger"]
 #+end_src
 
 **** Escape character

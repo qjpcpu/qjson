@@ -1077,3 +1077,145 @@ func (suite *JSONTreeTestSuite) TestRemoveArray() {
 	tree.Remove("#")
 	suite.Len(tree.Root.ArrayValues, 0)
 }
+
+func (suite *JSONTreeTestSuite) TestFindCloseSym() {
+	example := `#(nets.#(=="fb"))`
+	proj := map[byte]byte{
+		'(': ')',
+		'"': '"',
+	}
+	idx := findCloseSym([]byte(example), 2, len(example), '(', proj)
+	suite.Equal(len(example)-1, idx)
+
+	idx = findCloseSym([]byte(example), 9, len(example), '(', proj)
+	suite.Equal(len(example)-2, idx)
+}
+
+func (suite *JSONTreeTestSuite) TestMakePath() {
+	example := `friends.#(nets.#(=="fb")).first`
+	paths, ok := makeStPath(example)
+	suite.True(ok)
+	suite.Len(paths, 3)
+	complextStep := paths[1]
+	suite.Equal(`#`, complextStep.Name)
+	suite.Equal(arrayElemEq, complextStep.Op)
+	suite.Equal(`"fb"`, complextStep.Val)
+	suite.Equal(`nets.#`, complextStep.Selector)
+
+	example = `friends.#(nets.#(ip=="fb")).first`
+	paths, ok = makeStPath(example)
+	suite.True(ok)
+	suite.Len(paths, 3)
+	complextStep = paths[1]
+	suite.Equal(`#`, complextStep.Name)
+	suite.Equal(arrayElemEq, complextStep.Op)
+	suite.Equal(`"fb"`, complextStep.Val)
+	suite.Equal(`nets.#.ip`, complextStep.Selector)
+}
+
+func (suite *JSONTreeTestSuite) TestFindWithFilter() {
+	jsonStr := `{
+  "name": {"first": "Tom", "last": "Anderson"},
+  "age":37,
+  "children": ["Sara","Alex","Jack"],
+  "fav.movie": "Deer Hunter",
+  "friends": [
+    {"first": "Dale", "last": "Murphy", "age": 44, "nets": ["ig", "fb", "tw"]},
+    {"first": "Roger", "last": "Craig", "age": 68, "nets": ["fb", "tw"]},
+    {"first": "Jane", "last": "Murphy x ", "age": 47, "nets": ["ig", "tw","fbe"]}
+  ]
+}`
+	tree, err := Decode([]byte(jsonStr))
+	suite.NoError(err)
+	node := tree.Find(`friends.#(nets.#(=="fb")).first`)
+	suite.Equal(`["Dale","Roger"]`, node.AsJSON())
+
+	node = tree.Find(`friends.#(nets.#(="fb")).first`)
+	suite.Equal(`["Dale","Roger","Jane"]`, node.AsJSON())
+
+	node = tree.Find(`friends.#(last="Craig").first`)
+	suite.Equal(`["Roger"]`, node.AsJSON())
+
+	node = tree.Find(`friends.#(last == "Murphy x ").first`)
+	suite.Equal(`["Jane"]`, node.AsJSON())
+	node = tree.Find(`friends.#(last == Murphy x ).first`)
+	suite.Equal(`[]`, node.AsJSON())
+}
+
+func (suite *JSONTreeTestSuite) TestFindWithSimpleFilter() {
+	jsonStr := `["a","b","c","de","cd"]`
+	tree, err := Decode([]byte(jsonStr))
+	suite.NoError(err)
+	node := tree.Find(`#(=c)`)
+	suite.Equal(`["c","cd"]`, node.AsJSON())
+
+	node = tree.Find(`#(==c)`)
+	suite.Equal(`["c"]`, node.AsJSON())
+}
+
+func (suite *JSONTreeTestSuite) TestFindWithSimpleFilter2() {
+	jsonStr := `[
+    {"first": "Dale", "last": "Murphy", "age": 44, "nets": ["ig", "fb", "tw"]},
+    {"first": "Roger", "last": "Craig", "age": 68, "nets": ["fb", "tw"]},
+    {"first": "Jane", "last": "Murphy x ", "age": 47, "nets": ["ig", "tw","fbe"]}
+  ]`
+	tree, err := Decode([]byte(jsonStr))
+	suite.NoError(err)
+	node := tree.Find(`#(last=Craig).first`)
+	suite.Equal(`["Roger"]`, node.AsJSON())
+
+	node = tree.Find(`#(last=Craig)`)
+	suite.Equal(`[{"first":"Roger","last":"Craig","age":68,"nets":["fb","tw"]}]`, node.AsJSON())
+}
+
+func (suite *JSONTreeTestSuite) TestFindWithFilter2() {
+	jsonStr := `{
+  "name": {"first": "Tom", "last": "Anderson"},
+  "age":37,
+  "children": ["Sara","Alex","Jack"],
+  "fav.movie": "Deer Hunter",
+  "friends": [
+    {"first": "Dale", "last": "Murphy", "age": 44, "nets": [ "fb"]},
+    {"first": "Roger", "last": "Craig", "age": 68, "nets": ["fb"]},
+    {"first": "Jane", "last": "Murphy x ", "age": 47, "nets": ["ig", "tw","fbe"]}
+  ]
+}`
+	tree, err := Decode([]byte(jsonStr))
+	suite.NoError(err)
+	node := tree.Find(`friends.#(nets.#(!=="fb")).first`)
+	suite.Equal(`["Jane"]`, node.AsJSON())
+
+	jsonStr = `["a","b","c"]`
+	tree, err = Decode([]byte(jsonStr))
+	suite.NoError(err)
+
+	node = tree.Find(`#(!=c)`)
+	suite.Equal(`["a","b"]`, node.AsJSON())
+}
+
+func (suite *JSONTreeTestSuite) TestFindWithFilter3() {
+	jsonStr := `{
+  "name": {"first": "Tom", "last": "Anderson"},
+  "age":37,
+  "children": ["Sara","Alex","Jack"],
+  "fav.movie": "Deer Hunter",
+  "friends": [
+    {"first": "Dale", "last": "Murphy", "age": 44, "nets": [ "fb"]},
+    {"first": "Roger", "last": "Craig", "age": 68, "nets": ["fb"]},
+    {"first": "Jane", "last": "Murphy x ", "age": 47, "nets": ["ig", "tw","fbe"]}
+  ]
+}`
+	tree, err := Decode([]byte(jsonStr))
+	suite.NoError(err)
+	node := tree.Find(`friends.#(age>47).first`)
+	suite.Equal(`["Roger"]`, node.AsJSON())
+
+	node = tree.Find(`friends.#(age>=47).first`)
+	suite.Equal(`["Roger","Jane"]`, node.AsJSON())
+
+	node = tree.Find(`friends.#(age<47).first`)
+	suite.Equal(`["Dale"]`, node.AsJSON())
+
+	node = tree.Find(`friends.#(age<=47).first`)
+	suite.Equal(`["Dale","Jane"]`, node.AsJSON())
+}

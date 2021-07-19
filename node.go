@@ -84,7 +84,11 @@ func (n *Node) AsTree() *JSONTree {
 
 // Find find offspring node by key
 func (n *Node) Find(key string) *Node {
-	return findNode(n, makeStPath(key))
+	p, ok := makeStPath(key)
+	if !ok {
+		return nil
+	}
+	return findNode(n, p)
 }
 
 // GetObjectElemByKey get object value by key

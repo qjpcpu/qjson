@@ -18,16 +18,20 @@ var (
 )
 
 const (
-	objectStart  byte = '{'
-	objectEnd    byte = '}'
-	arrayStart   byte = '['
-	arrayEnd     byte = ']'
-	quote        byte = '"'
-	escapeChar   byte = '\\'
-	dotChar      byte = '.'
-	negativeChar byte = '-'
-	colonChar    byte = ':'
-	commaChar    byte = ','
+	objectStart             byte = '{'
+	objectEnd               byte = '}'
+	arrayStart              byte = '['
+	arrayEnd                byte = ']'
+	quote                   byte = '"'
+	escapeChar              byte = '\\'
+	dotChar                 byte = '.'
+	negativeChar            byte = '-'
+	colonChar               byte = ':'
+	commaChar               byte = ','
+	scientificNotationLower byte = 'e'
+	scientificNotationUpper byte = 'E'
+	scientificNotationPlus  byte = '+'
+	scientificNotationMinus byte = '-'
 )
 
 const (
@@ -199,7 +203,9 @@ func fillNumberNode(jsonBytes []byte, offset int, node *Node) int {
 	start := offset
 	for ; offset < len(jsonBytes); offset++ {
 		b := jsonBytes[offset]
-		if b == dotChar || b == negativeChar || isIntegerChar(b) {
+		if b == dotChar || b == negativeChar ||
+			b == scientificNotationLower || b == scientificNotationUpper || b == scientificNotationPlus || b == scientificNotationMinus ||
+			isIntegerChar(b) {
 			continue
 		}
 		break
@@ -260,12 +266,27 @@ func nextValueIsNumber(jsonBytes []byte, offset int) bool {
 	}
 	start := offset
 	for offset = offset + 1; offset < len(jsonBytes); offset++ {
+		if b := jsonBytes[offset]; b == scientificNotationLower || b == scientificNotationUpper {
+			if offset+1 >= len(jsonBytes) {
+				return false
+			}
+			if jsonBytes[offset+1] == scientificNotationPlus || jsonBytes[offset+1] == scientificNotationMinus {
+				offset++
+				continue
+			}
+		}
 		if !isIntegerChar(jsonBytes[offset]) && jsonBytes[offset] != dotChar {
 			break
 		}
 	}
 	word := string(jsonBytes[start:offset])
 	if strings.Count(word, dotString) > 1 {
+		return false
+	}
+	if !isIntegerChar(word[len(word)-1]) {
+		return false
+	}
+	if w := strings.ToLower(word); strings.Count(w, "e") > 1 || strings.Count(w, "+") > 1 || strings.Count(w, "e-") > 1 {
 		return false
 	}
 	return true

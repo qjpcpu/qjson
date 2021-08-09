@@ -135,9 +135,12 @@ func (suite *JSONTreeTestSuite) compareTreeWithMap(m map[string]interface{}, obj
 			var s bool
 			suite.Nil(json.Unmarshal([]byte(tv.Value), &s))
 			suite.Equal(v.(bool), s)
-		case Float, Integer:
+		case Integer:
 			vs, _ := json.Marshal(v)
 			suite.Equal(string(vs), tv.Value)
+		case Float:
+			f, _ := strconv.ParseFloat(tv.Value, 64)
+			suite.Equal(v, f)
 		case Object:
 			sub, ok := v.(map[string]interface{})
 			suite.True(ok)
@@ -1218,4 +1221,60 @@ func (suite *JSONTreeTestSuite) TestFindWithFilter3() {
 
 	node = tree.Find(`friends.#(age<=47).first`)
 	suite.Equal(`["Dale","Jane"]`, node.AsJSON())
+}
+
+func (suite *JSONTreeTestSuite) TestScientificNotation() {
+	jsonStr := `{
+    "age":3.310354432E+10,
+	"age2":2.3e3,
+	"age3":2.3e-2,
+	"age33": -3.310354432E-1,
+	"Avogadro": 6.02214129e23,
+	"Planck": 6.62606957e-34
+  }`
+	tree, err := Decode([]byte(jsonStr))
+	suite.NoError(err)
+	val := tree.Root.ObjectValues[0].Value
+	suite.Equal(Float, val.Type)
+	f, err := strconv.ParseFloat(val.Value, 64)
+	suite.NoError(err)
+	suite.Equal(float64(33103544320), f)
+
+	val = tree.Root.ObjectValues[1].Value
+	suite.Equal(Float, val.Type)
+	f, err = strconv.ParseFloat(val.Value, 64)
+	suite.NoError(err)
+	suite.Equal(float64(2300), f)
+
+	val = tree.Root.ObjectValues[2].Value
+	suite.Equal(Float, val.Type)
+	f, err = strconv.ParseFloat(val.Value, 64)
+	suite.NoError(err)
+	suite.Equal(float64(0.023), f)
+
+	val = tree.Root.ObjectValues[3].Value
+	suite.Equal(Float, val.Type)
+	f, err = strconv.ParseFloat(val.Value, 64)
+	suite.NoError(err)
+	suite.Equal(float64(-0.3310354432), f)
+
+	val = tree.Root.ObjectValues[4].Value
+	suite.Equal(Float, val.Type)
+	f, err = strconv.ParseFloat(val.Value, 64)
+	suite.NoError(err)
+	suite.Equal(float64(6.02214129e+23), f)
+
+	val = tree.Root.ObjectValues[5].Value
+	suite.Equal(Float, val.Type)
+	f, err = strconv.ParseFloat(val.Value, 64)
+	suite.NoError(err)
+	suite.Equal(float64(6.62606957e-34), f)
+}
+
+func (suite *JSONTreeTestSuite) TestScientificNotation2() {
+	jsonStr := `{
+    "age":-3.310354432E-
+  }`
+	_, err := Decode([]byte(jsonStr))
+	suite.Error(err)
 }

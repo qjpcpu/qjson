@@ -55,6 +55,15 @@ func PrettyMarshalWithIndent(v interface{}) []byte {
 
 // JSONMarshalWithPanic json marshal with panic
 func JSONMarshalWithPanic(t interface{}) []byte {
+	return jsonMarshalWithPanic(t, false)
+}
+
+// JSONIndentMarshalWithPanic json marshal with panic
+func JSONIndentMarshalWithPanic(t interface{}) []byte {
+	return jsonMarshalWithPanic(t, true)
+}
+
+func jsonMarshalWithPanic(t interface{}, indent bool) []byte {
 	if t == nil {
 		return nil
 	}
@@ -64,6 +73,9 @@ func JSONMarshalWithPanic(t interface{}) []byte {
 	buffer := &bytes.Buffer{}
 	encoder := ejson.NewEncoder(buffer)
 	encoder.SetEscapeHTML(false)
+	if indent {
+		encoder.SetIndent("", "  ")
+	}
 	if err := encoder.Encode(t); err != nil {
 		panic(err)
 	}

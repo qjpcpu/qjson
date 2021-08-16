@@ -32,6 +32,11 @@ func (tree *JSONTree) JSONString() string {
 	return string(JSONMarshalWithPanic(tree))
 }
 
+// JSONIndentString tree to string with indent
+func (tree *JSONTree) JSONIndentString() string {
+	return string(JSONIndentMarshalWithPanic(tree))
+}
+
 // ColorfulMarshal print json with color
 func (tree *JSONTree) ColorfulMarshal() []byte {
 	return new(Formatter).Format(tree)

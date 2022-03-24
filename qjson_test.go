@@ -1278,3 +1278,11 @@ func (suite *JSONTreeTestSuite) TestScientificNotation2() {
 	_, err := Decode([]byte(jsonStr))
 	suite.Error(err)
 }
+
+func (suite *JSONTreeTestSuite) TestJSONEqual() {
+	s1 := `[{"s":1,"d":2,"m":null}]`
+	s2 := `[{"d":2,"s":1}]`
+	t1, _ := Decode([]byte(s1))
+	t2, _ := Decode([]byte(s2))
+	suite.True(t1.Equal(t2))
+}

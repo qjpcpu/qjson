@@ -84,3 +84,8 @@ func (tree *JSONTree) Remove(path string) {
 		}
 	}
 }
+
+// Equal two json tree
+func (tree *JSONTree) Equal(t2 *JSONTree) bool {
+	return tree.Root.Equal(t2.Root)
+}

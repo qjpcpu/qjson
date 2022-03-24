@@ -439,3 +439,72 @@ func objectElemMarshalJSON(buf *bytes.Buffer, e *ObjectElem) {
 	buf.WriteByte(colonChar)
 	nodeMarshalJSON(buf, e.Value)
 }
+
+// Equal two nodes
+func (n *Node) Equal(o *Node) bool {
+	if (n == nil || n.IsNull()) && (o == nil || o.IsNull()) {
+		return true
+	} else if (n == nil || n.IsNull()) && (o != nil && !o.IsNull()) {
+		return false
+	} else if (n != nil && !n.IsNull()) && (o == nil || o.IsNull()) {
+		return false
+	}
+	if n.Type != n.Type {
+		return false
+	}
+	switch n.Type {
+	case String, Bool, Integer, Float:
+		return n.Value == o.Value
+	case Object:
+		objects1 := make(map[string]*Node)
+		objects2 := make(map[string]*Node)
+		for i, val := range n.ObjectValues {
+			if val == nil || val.Key == nil || val.Value == nil || val.Key.IsNull() || val.Value.IsNull() {
+				continue
+			}
+			objects1[val.Key.AsString()] = n.ObjectValues[i].Value
+		}
+		for i, val := range o.ObjectValues {
+			if val == nil || val.Key == nil || val.Value == nil || val.Key.IsNull() || val.Value.IsNull() {
+				continue
+			}
+			objects2[val.Key.AsString()] = o.ObjectValues[i].Value
+		}
+		if len(objects1) != len(objects2) {
+			return false
+		}
+		for k, val := range objects1 {
+			if val2, ok := objects2[k]; !ok {
+				return false
+			} else if !val.Equal(val2) {
+				return false
+			}
+		}
+		return true
+	case Array:
+		slice1 := make([]*Node, 0, len(n.ArrayValues))
+		slice2 := make([]*Node, 0, len(o.ArrayValues))
+		for i, val := range n.ArrayValues {
+			if val == nil || val.IsNull() {
+				continue
+			}
+			slice1 = append(slice1, n.ArrayValues[i])
+		}
+		for i, val := range o.ArrayValues {
+			if val == nil || val.IsNull() {
+				continue
+			}
+			slice2 = append(slice2, n.ArrayValues[i])
+		}
+		if len(slice1) != len(slice2) {
+			return false
+		}
+		for i, val := range slice1 {
+			if !val.Equal(slice2[i]) {
+				return false
+			}
+		}
+		return true
+	}
+	return false
+}

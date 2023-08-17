@@ -3,6 +3,7 @@ package qjson
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"strconv"
 )
 
@@ -321,7 +322,7 @@ func (n *Node) AsString() string {
 	case String:
 		s, err := stdUnmarshalString([]byte(n.Value))
 		if err != nil {
-			panic(err)
+			panic(fmt.Errorf("%v `%s`", err, n.Value))
 		}
 		return bytesToString(s)
 	case Bool:

@@ -370,7 +370,7 @@ func (n *Node) AsUint() uint64 {
 
 // AsFloat as float64
 func (n *Node) AsFloat() float64 {
-	if n.Type != Integer {
+	if n.Type != Float {
 		panic("node type should be float value")
 	}
 	i, err := strconv.ParseFloat(n.Value, 64)

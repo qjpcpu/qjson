@@ -37,6 +37,7 @@ func CreateNode() *Node {
 	}
 	node.Value = emptyVal
 	node.Type = Null
+	node.hashId = 0
 	return node
 }
 

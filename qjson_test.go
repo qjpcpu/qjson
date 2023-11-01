@@ -1286,3 +1286,47 @@ func (suite *JSONTreeTestSuite) TestJSONEqual() {
 	t2, _ := Decode([]byte(s2))
 	suite.True(t1.Equal(t2))
 }
+
+func (suite *JSONTreeTestSuite) testEqHash(s1, s2 string) {
+	t1, _ := Decode([]byte(s1))
+	t2, _ := Decode([]byte(s2))
+	suite.Equal(t1.Root.Hash(), t2.Root.Hash())
+}
+
+func (suite *JSONTreeTestSuite) testNotEqHash(s1, s2 string) {
+	t1, _ := Decode([]byte(s1))
+	t2, _ := Decode([]byte(s2))
+	suite.NotEqual(t1.Root.Hash(), t2.Root.Hash())
+}
+
+func (suite *JSONTreeTestSuite) TestHash() {
+	suite.testNotEqHash(`[1,2,3]`, `[3,1,2]`)
+	suite.testEqHash(`[3,1, 2]`, `[3,1,2]`)
+	suite.testNotEqHash(`[1,null,3]`, `[3,1,null]`)
+	suite.testNotEqHash(`[2,1,null,3]`, `[3,1,null]`)
+	suite.testNotEqHash(`{"a":[1,2,3],"b":2}`, `{"b":2,"a":[3,2,1]}`)
+	suite.testEqHash(`{"a":[1,2,3],"b":2}`, `{"b":2,"a":[1,2,3]}`)
+	suite.testEqHash(`{"a":[],"b":2}`, `{"b":2,"a":[]}`)
+	suite.testNotEqHash(`{"a":null,"b":2}`, `{"b":2,"a":[]}`)
+	suite.testEqHash(`null`, `null`)
+	suite.testNotEqHash(`null`, `[]`)
+	suite.testNotEqHash(`null`, `{}`)
+	suite.testNotEqHash(`[1]`, `["1"]`)
+	suite.testNotEqHash(`[1]`, `[1.0]`)
+	suite.testEqHash(`6.02214129e23`, `6.02214129e23`)
+	suite.testEqHash(`6.62606957e-34`, `6.62606957e-34`)
+	suite.testNotEqHash(`6.62606957e-4`, `0.000662606957`)
+}
+
+func (suite *JSONTreeTestSuite) TestRehash() {
+	t1, _ := Decode([]byte(`{"a":[1]}`))
+	h1 := t1.Root.Hash()
+	t1.Root.ObjectValues[0].Value.ArrayValues[0].SetInt(2)
+	h2 := t1.Root.Hash()
+	h3 := t1.Root.Rehash()
+	h4 := t1.Root.Hash()
+
+	suite.Equal(h1, h2)
+	suite.NotEqual(h3, h2)
+	suite.Equal(h3, h4)
+}

@@ -36,6 +36,7 @@ type Node struct {
 	Value        string
 	ObjectValues []*ObjectElem
 	ArrayValues  []*Node
+	hashId       uint64
 }
 
 // ObjectElem represent an object

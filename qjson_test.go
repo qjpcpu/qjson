@@ -3,6 +3,7 @@ package qjson
 import (
 	"bytes"
 	"io/ioutil"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -1329,4 +1330,65 @@ func (suite *JSONTreeTestSuite) TestRehash() {
 	suite.Equal(h1, h2)
 	suite.NotEqual(h3, h2)
 	suite.Equal(h3, h4)
+}
+
+func (suite *JSONTreeTestSuite) testDiff(s1, s2 string, diffs ...DiffItem) {
+	t1, _ := Decode([]byte(s1))
+	t2, _ := Decode([]byte(s2))
+	items := Diff(t1, t2)
+	sort.SliceStable(diffs, func(i, j int) bool {
+		return diffs[i].String() < diffs[j].String()
+	})
+	sort.SliceStable(items, func(i, j int) bool {
+		return items[i].String() < items[j].String()
+	})
+	r1, r2 := string(JSONMarshalWithPanic(diffs)), string(JSONMarshalWithPanic(items))
+	if len(items) != len(diffs) || r1 != r2 {
+		suite.Equal(r1, r2)
+	}
+}
+
+func (suite *JSONTreeTestSuite) TestDiff() {
+	suite.testDiff(
+		`{"a":1}`,
+		`{"a":2}`,
+		DiffItem{DiffOfValue, "a", "1", "2"},
+	)
+
+	suite.testDiff(
+		`{"a":1}`,
+		`{"a":"1"}`,
+		DiffItem{DiffOfType, "a", "1", `"1"`},
+	)
+
+	suite.testDiff(
+		`{"a":1,"b":[1,2,3]}`,
+		`{"a":"1"}`,
+		DiffItem{DiffOfType, "a", "1", `"1"`},
+		DiffItem{DiffOfValue, "b", "[1,2,3]", `null`},
+	)
+
+	suite.testDiff(
+		`{"a":1,"b":[1,2,3]}`,
+		`{"a":"1","b":[]}`,
+		DiffItem{DiffOfType, "a", "1", `"1"`},
+		DiffItem{DiffOfValue, "b", "[1,2,3]", `[]`},
+	)
+
+	suite.testDiff(
+		`{"a":1,"b":{"inner":"hello"}}`,
+		`{"a":"1","b":{"inner":"world"}}`,
+		DiffItem{DiffOfType, "a", "1", `"1"`},
+		DiffItem{DiffOfValue, "b.inner", `"hello"`, `"world"`},
+	)
+
+	suite.testDiff(
+		`{"a":1,"b":{"inner":"hello","list":["a","b","c"]}}`,
+		`{"a":"1","b":{"inner":"world","list":["A","B","C"]}}`,
+		DiffItem{DiffOfType, "a", "1", `"1"`},
+		DiffItem{DiffOfValue, "b.inner", `"hello"`, `"world"`},
+		DiffItem{DiffOfValue, "b.list.0", `"a"`, `"A"`},
+		DiffItem{DiffOfValue, "b.list.1", `"b"`, `"B"`},
+		DiffItem{DiffOfValue, "b.list.2", `"c"`, `"C"`},
+	)
 }

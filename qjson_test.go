@@ -1365,7 +1365,7 @@ func (suite *JSONTreeTestSuite) TestDiff() {
 		`{"a":1,"b":[1,2,3]}`,
 		`{"a":"1"}`,
 		DiffItem{DiffOfType, "a", "1", `"1"`},
-		DiffItem{DiffOfValue, "b", "[1,2,3]", `null`},
+		DiffItem{DiffOfValue, "b", "[1,2,3]", undefined},
 	)
 
 	suite.testDiff(
@@ -1390,5 +1390,59 @@ func (suite *JSONTreeTestSuite) TestDiff() {
 		DiffItem{DiffOfValue, "b.list.0", `"a"`, `"A"`},
 		DiffItem{DiffOfValue, "b.list.1", `"b"`, `"B"`},
 		DiffItem{DiffOfValue, "b.list.2", `"c"`, `"C"`},
+	)
+
+	suite.testDiff(
+		`null`,
+		`null`,
+	)
+
+	suite.testDiff(
+		`null`,
+		`[]`,
+		DiffItem{DiffOfType, "", "null", `[]`},
+	)
+
+	suite.testDiff(
+		`[1]`,
+		`[1,2]`,
+		DiffItem{DiffOfValue, "", "[1]", `[1,2]`},
+	)
+
+	suite.testDiff(
+		`[1,3]`,
+		`[1,2]`,
+		DiffItem{DiffOfValue, "1", "3", `2`},
+	)
+
+	suite.testDiff(
+		`[{"a":1,"b":2},{"c":"X"}]`,
+		`[1,{"c":"X"}]`,
+		DiffItem{DiffOfType, "0", `{"a":1,"b":2}`, `1`},
+	)
+
+	suite.testDiff(
+		`[{"a":1,"b":2},{"c":"X"}]`,
+		`[{"a":1,"b":2},{"c":"Y"}]`,
+		DiffItem{DiffOfValue, "1.c", `"X"`, `"Y"`},
+	)
+
+	suite.testDiff(
+		`[{"a":1,"b":2},{"c":"X"}]`,
+		`[{"a":1,"b":2},{"c":"X","d":"Z"}]`,
+		DiffItem{DiffOfValue, "1.d", undefined, `"Z"`},
+	)
+
+	suite.testDiff(
+		`[{"a":1,"b":2},{"c":"X"},{"m":1}]`,
+		`[{"a":1,"b":2},{"c":"X","d":"Z"},{}]`,
+		DiffItem{DiffOfValue, "1.d", undefined, `"Z"`},
+		DiffItem{DiffOfValue, "2.m", "1", undefined},
+	)
+
+	suite.testDiff(
+		`{"a":"undefined"}`,
+		`{}`,
+		DiffItem{DiffOfValue, "a", `"undefined"`, undefined},
 	)
 }

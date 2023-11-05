@@ -8,6 +8,8 @@ import (
 
 type DiffType int
 
+const undefined = "undefined"
+
 const (
 	DiffOfType DiffType = iota
 	DiffOfValue
@@ -23,7 +25,8 @@ func (t DiffType) String() string {
 		return ""
 	}
 }
-func Diff(t1, t2 *JSONTree) []DiffItem {
+
+func Diff(t1, t2 *JSONTree) DiffItems {
 	d := &differ{}
 	d.diffNode(t1.Root, t2.Root, "")
 	return d.diffList
@@ -33,6 +36,19 @@ type DiffItem struct {
 	Type        DiffType
 	Path        string
 	Left, Right string
+}
+
+type DiffItems []DiffItem
+
+func (items DiffItems) Exist() bool { return len(items) > 0 }
+
+func (items DiffItems) String() string {
+	var sb strings.Builder
+	sb.WriteString(fmt.Sprintf("Total %v diff\n", len(items)))
+	for _, item := range items {
+		sb.WriteString(item.String() + "\n")
+	}
+	return sb.String()
 }
 
 func (item DiffItem) String() string {
@@ -98,12 +114,13 @@ func (d *differ) appendPath(prefix string, suffix ...string) string {
 	return prefix
 }
 
-func (d *differ) addDiff(t DiffType, prefix string, ln, lr *Node) {
-	if ln == nil {
-		ln = CreateNode()
+func (d *differ) addDiff(t DiffType, prefix string, ln, rn *Node) {
+	lv, rv := undefined, undefined
+	if ln != nil {
+		lv = ln.AsJSON()
 	}
-	if lr == nil {
-		lr = CreateNode()
+	if rn != nil {
+		rv = rn.AsJSON()
 	}
-	d.diffList = append(d.diffList, DiffItem{Type: t, Path: strings.TrimPrefix(prefix, "."), Left: ln.AsJSON(), Right: lr.AsJSON()})
+	d.diffList = append(d.diffList, DiffItem{Type: t, Path: strings.TrimPrefix(prefix, "."), Left: lv, Right: rv})
 }

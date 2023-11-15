@@ -1,6 +1,7 @@
 package qjson
 
 import (
+	"bytes"
 	"hash/fnv"
 	"sort"
 	"strconv"
@@ -26,28 +27,32 @@ func (n *Node) hash() uint64 {
 	case Null:
 		n.hashId = 0
 	case String, Bool, Integer, Float:
-		h := fnv.New64()
-		h.Write(stringToBytes(n.Value))
-		n.hashId = h.Sum64()
+		n.hashId = bytesHash(stringToBytes(n.Value))
 	case Object:
-		list := make([]string, len(n.ObjectValues))
-		for i, item := range n.ObjectValues {
-			list[i] = strconv.FormatUint(item.Key.hash(), 10) + ":" +
-				strconv.FormatUint(item.Value.hash(), 10)
+		list := getStrSlice()
+		defer putStrSlice(list)
+		for _, item := range n.ObjectValues {
+			list.Str = append(list.Str, strconv.FormatUint(item.Key.hash(), 10)+":"+
+				strconv.FormatUint(item.Value.hash(), 10))
 		}
-		sort.Strings(list)
-		h := fnv.New64()
-		h.Write(stringToBytes(strings.Join(list, ",")))
-		n.hashId = h.Sum64()
+		sort.Strings(list.Str)
+		n.hashId = bytesHash(stringToBytes(strings.Join(list.Str, ",")))
 	case Array:
-		list := make([]string, len(n.ArrayValues))
-		for i, item := range n.ArrayValues {
-			list[i] = strconv.FormatUint(item.hash(), 10)
+		buf := bytesPool.Get().(*bytes.Buffer)
+		buf.Reset()
+		defer bytesPool.Put(buf)
+		for _, item := range n.ArrayValues {
+			buf.Write(stringToBytes(strconv.FormatUint(item.hash(), 10)))
+			buf.WriteByte(',')
 		}
-		h := fnv.New64()
-		h.Write(stringToBytes(strings.Join(list, ",")))
-		n.hashId = h.Sum64()
+		n.hashId = bytesHash(buf.Bytes())
 	}
 
 	return n.hashId
+}
+
+func bytesHash(bs []byte) uint64 {
+	h := fnv.New64()
+	h.Write(bs)
+	return h.Sum64()
 }

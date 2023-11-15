@@ -9,6 +9,7 @@ import (
 var (
 	nodePool   = &sync.Pool{New: func() interface{} { return new(Node) }}
 	objectPool = &sync.Pool{New: func() interface{} { return new(ObjectElem) }}
+	strsPool   = &sync.Pool{New: func() interface{} { return new(strSlice) }}
 )
 
 // Release json tree for objects reuse
@@ -53,4 +54,20 @@ func CreateObjectElem() *ObjectElem {
 		object.Value = nil
 	}
 	return object
+}
+
+type strSlice struct {
+	Str []string
+}
+
+func getStrSlice() *strSlice {
+	ss := strsPool.Get().(*strSlice)
+	if ss.Str != nil {
+		ss.Str = ss.Str[:0]
+	}
+	return ss
+}
+
+func putStrSlice(ss *strSlice) {
+	strsPool.Put(ss)
 }

@@ -451,7 +451,7 @@ func (n *Node) Equal(o *Node) bool {
 	} else if (n != nil && !n.IsNull()) && (o == nil || o.IsNull()) {
 		return false
 	}
-	if n.Type != n.Type {
+	if n.Type != o.Type {
 		return false
 	}
 	switch n.Type {

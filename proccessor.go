@@ -111,7 +111,7 @@ func fillObjectNode(jsonBytes []byte, offset int, node *Node) (int, error) {
 		if nextOffset := nextValueShouldBe(jsonBytes, offset, colonChar); nextOffset == -1 {
 			return 0, fmt.Errorf("expect :, unexpected json char %s", jsonBytes[offset:])
 		} else if offset = searchFirstValidChar(jsonBytes, nextOffset+1); offset == -1 {
-			return 0, fmt.Errorf("expect object value, unexpected json char %s", jsonBytes[offset:])
+			return 0, fmt.Errorf("expect object value, unexpected json char %s", jsonBytes[nextOffset+1:])
 		}
 
 		if nextValueIsObject(jsonBytes, offset) {

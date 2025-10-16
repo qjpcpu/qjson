@@ -1280,6 +1280,24 @@ func (suite *JSONTreeTestSuite) TestScientificNotation2() {
 	suite.Error(err)
 }
 
+func (suite *JSONTreeTestSuite) TestScientificNotation3() {
+	jsonStr := `{
+    "age":0E-24
+  }`
+	tree, err := Decode([]byte(jsonStr))
+	suite.NoError(err)
+	val := tree.Root.ObjectValues[0].Value
+	suite.Equal(float64(0), val.AsFloat())
+
+	jsonStr = `{
+    "age":0E24
+  }`
+	tree, err = Decode([]byte(jsonStr))
+	suite.NoError(err)
+	val = tree.Root.ObjectValues[0].Value
+	suite.Equal(float64(0), val.AsFloat())
+}
+
 func (suite *JSONTreeTestSuite) TestJSONEqual() {
 	s1 := `[{"s":1,"d":2,"m":null}]`
 	s2 := `[{"d":2,"s":1}]`

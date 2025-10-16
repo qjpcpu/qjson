@@ -212,7 +212,7 @@ func fillNumberNode(jsonBytes []byte, offset int, node *Node) int {
 	}
 
 	node.Value = bytesToString(jsonBytes[start:offset])
-	if strings.Contains(node.Value, dotString) {
+	if strings.Contains(node.Value, dotString) || strings.Index(node.Value, "e") > 0 || strings.Index(node.Value, "E") > 0 {
 		node.Type = Float
 	} else {
 		node.Type = Integer

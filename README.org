@@ -1,111 +1,150 @@
 * qjson
-simple and fast json encode/decode lib.
+[[https://github.com/qjpcpu/qjson/actions/workflows/ci.yml][https://github.com/qjpcpu/qjson/actions/workflows/ci.yml/badge.svg]]
+[[https://codecov.io/gh/qjpcpu/qjson][https://codecov.io/gh/qjpcpu/qjson/branch/main/graph/badge.svg]]
+[[https://go.dev/][https://img.shields.io/badge/go-1.13%2B-00ADD8?logo=go]]
+[[LICENSE][https://img.shields.io/badge/license-MIT-green]]
+Fast, lightweight JSON encode/decode and query library. It provides an inspectable/mutable JSONTree structure and a powerful QJSON Path query syntax.
 
-** unmarshal json bytes to JSONTree
+** Highlights
+- High‑performance parsing: decode raw JSON into traversable `JSONTree`/`Node` with object pool reuse to reduce GC pressure.
+- QJSON Path queries: access by object keys and array indexes; support the `#` selector and filters (`==`, `=`, `!==`, `!=`, `>`, `>=`, `<`, `<=`), plus escaped dots in keys.
+- In‑place mutation: set values via `SetString/SetInt/SetBool/SetFloat`, remove object keys and array elements.
+- Readable output: ANSI colored output via `ColorfulMarshal` and `ColorfulMarshalWithIndent` for terminal UX.
+- Encoding interoperability: `json.Marshal/Unmarshal` works directly on `JSONTree`; convert any Go object via `ConvertToJSONTree`.
+- Equality and hashing: structural equality with `Equal()` and stable hashes with `Hash()/Rehash()`.
+- Diff: `Diff()` produces a list of differences between two trees, useful for change audits and test comparisons.
+- Zero external dependencies: standard library only (Go ≥ 1.13).
 
-#+begin_src
-tree,err := Decode([]byte(`{"a":1}`))
-// or
-tree := JSONTree{}
-err := json.Unmarshal([]byte(`{"a":1}`),&tree)
+** Install
+#+begin_src bash
+go get -u github.com/qjpcpu/qjson@latest
 #+end_src
 
-** marshal JSONTree to bytes
+** Badges
+- Build: GitHub Actions CI (tests + coverage)
+- Coverage: Codecov badge (optional; see CI setup)
+- Go: uses version from `go.mod`
+- License: MIT
 
-#+begin_src
-data, err := json.Marshal(tree)
-#+end_src
+[[https://github.com/qjpcpu/qjson/actions/workflows/ci.yml][https://github.com/qjpcpu/qjson/actions/workflows/ci.yml/badge.svg]]
+[[https://codecov.io/gh/qjpcpu/qjson][https://codecov.io/gh/qjpcpu/qjson/branch/main/graph/badge.svg]]
+[[https://go.dev/][https://img.shields.io/badge/go-1.13%2B-00ADD8?logo=go]]
+[[LICENSE][https://img.shields.io/badge/license-MIT-green]]
 
-** query
 
-A QJSON Path is a text string syntax that describes a search pattern for quickly retreiving values from a JSON payload.
+** Quick Start
+#+begin_src go
+package main
 
-*** Path structure
+import (
+  "encoding/json"
+  "fmt"
+  qjson "github.com/qjpcpu/qjson"
+)
 
-A QJSON Path is intended to be easily expressed as a series of components seperated by a `.` character.
+func main() {
+  // Parse
+  tree, err := qjson.Decode([]byte(`{"name":{"first":"Tom","last":"Anderson"},"age":37}`))
+  if err != nil { panic(err) }
 
-**** Example
+  // Query
+  fmt.Println(tree.Find("name.last").AsString()) // Anderson
+  fmt.Println(tree.Find("age").AsInt())          // 37
 
-Given this JSON
+  // Mutate
+  tree.Find("name.first").SetString("Link")
+  tree.Find("age").SetInt(12)
 
-#+begin_src
-{
-  "name": {"first": "Tom", "last": "Anderson"},
-  "age":37,
-  "children": ["Sara","Alex","Jack"],
-  "fav.movie": "Deer Hunter",
-  "friends": [
-    {"first": "Dale", "last": "Murphy", "age": 44, "nets": ["ig", "fb", "tw"]},
-    {"first": "Roger", "last": "Craig", "age": 68, "nets": ["fb", "tw"]},
-    {"first": "Jane", "last": "Murphy", "age": 47, "nets": ["ig", "tw"]}
-  ]
+  // Encode (std lib)
+  data, _ := json.Marshal(tree)
+  fmt.Println(string(data)) // {"name":{"first":"Link","last":"Anderson"},"age":12}
+
+  // Color output
+  fmt.Println(string(tree.ColorfulMarshal()))
 }
 #+end_src
 
-The following QJSON Paths evaluate to the accompanying values.
+** QJSON Path Syntax
+- Basics: use `.` to access object keys or array indexes
+  - `name.last` → "Anderson"
+  - `children.1` → "Alex"
+- Selector `#`: project or filter arrays
+  - `friends.#.age` → `[44,68,47]`
+- Filters inside `#(...)`
+  - Contains: `#(=c)`; Equals: `#(==c)`; Not contains: `#(!=c)`; Not equals: `#(!==c)`
+  - Comparisons: `age>47`, `age>=47`, `age<47`, `age<=47`
+  - Nested: `friends.#(nets.#(=="fb"))`
+- Escaping: keys containing `.` must escape the dot, e.g. `fav\.movie` or raw string literal `fav\.movie`
 
-**** Basic
-
-In many cases you'll just want to retreive values by object name or array index.
-
+** Modify & Delete
 #+begin_src go
-name.last              "Anderson"      // tree.Find(`name.last`).AsString()
-name.first             "Tom"           // tree.Find(`name.first`).AsString()
-age                    37              // tree.Find(`age`).AsInt()
-children               ["Sara","Alex","Jack"]          // tree.Find(`children`).AsJSON()
-children.0             "Sara"      // tree.Find(`children.0`).AsString()
-children.1             "Alex"      // tree.Find(`children.1`).AsString()
-friends.1              {"first": "Roger", "last": "Craig", "age": 68}    // tree.Find(`friends.1`).AsJSON()
-friends.1.first        "Roger"          // tree.Find(`friends.1.first`).AsString()
-friends.#(nets.#(=="fb")).first     ["Dale","Roger","Jane"]  // == means equal
-friends.#(nets.#(="f")).first    ["Dale","Roger"]  // = means contains
-friends.#(last=Craig).first   ["Roger"]
-friends.#(age>47).first     ["Roger"]
-friends.#(age>=47).first     ["Roger","Jane"]
-friends.#(age<47).first       ["Dale"]
-friends.#(age<=47).first      ["Dale","Jane"]
-// example json ["a","b","c"]
-#(!=c)                       ["a","b"]   // not contains c
-#(!==c)                       ["a","b"]  // not equal c
-#+end_src
-
-**** Escape character
-
-Special purpose characters, such as ., can be escaped with \.
-
-#+begin_src go
-fav\.movie             "Deer Hunter"
-#+end_src
-
-You'll also need to make sure that the `\` character is correctly escaped when hardcoding a path in you source code.
-
-#+begin_src go
-// Go
-tree.Find("fav\\.movie").AsString() // "Deer Hunter" must escape the slash
-tree.Find(`fav\.movie`).AsString()  // "Deer Hunter" no need to escape the slash
-#+end_src
-
-** modify
-
-#+begin_src go
-// rename Tom to Link
+// Modify
 tree.Find(`name.first`).SetString("Link")
-// change age to 12
 tree.Find(`age`).SetInt(12)
+
+// Remove object key
+tree.Remove(`name.last`)
+
+// Remove array element; clear array
+tree.Remove(`children.0`)
+tree.Remove(`children.#`)
 #+end_src
 
-** benchmark
+** Object Conversion & Std Encoding
+#+begin_src go
+// Any object → JSONTree
+tree, err := qjson.ConvertToJSONTree(&struct{ X string `json:"x"` }{X:"1"})
 
-#+begin_src 
-goos: darwin
-goarch: amd64
-pkg: github.com/qjpcpu/qjson
-cpu: Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz
-BenchmarkMarshalQJSON-12          735711              1631 ns/op            1024 B/op          1 allocs/op
-BenchmarkUnmarshalQJSON-12         94591             12673 ns/op            1039 B/op         58 allocs/op
-BenchmarkMarshalStd-12             50536             23592 ns/op            9979 B/op        215 allocs/op
-BenchmarkUnmarshalStd-12           54302             21827 ns/op            9152 B/op        195 allocs/op
-PASS
-ok      github.com/qjpcpu/qjson 8.084s
+// JSONTree ↔ std lib
+var t qjson.JSONTree
+json.Unmarshal([]byte(`{"a":1}`), &t)
+data, _ := json.Marshal(&t)
 #+end_src
 
+** Color Output
+#+begin_src go
+// Non‑indented color
+fmt.Println(string(tree.ColorfulMarshal()))
+// Indented color
+fmt.Println(string(tree.ColorfulMarshalWithIndent()))
+#+end_src
+
+** Equality, Hash & Diff
+#+begin_src go
+t1, _ := qjson.Decode([]byte(`{"a":1}`))
+t2, _ := qjson.Decode([]byte(`{"a":1}`))
+fmt.Println(t1.Equal(t2))      // true
+fmt.Println(t1.Root.Hash())    // structural hash
+
+// Diff
+items := qjson.Diff(t1, t2)
+fmt.Println(items.Exist())     // any differences
+fmt.Println(items.String())    // human‑readable diff
+#+end_src
+
+** Performance & Benchmarks
+- Object pools and compact data structures improve parsing and manipulation performance.
+- Run benchmarks:
+#+begin_src bash
+go test -bench=. -benchmem
+#+end_src
+
+** Testing & Coverage
+- Run:
+#+begin_src bash
+go test ./... -cover
+#+end_src
+- Coverage: use the printed result (e.g. 87%+) from your environment.
+  - Optional: enable Codecov by adding `CODECOV_TOKEN` secret and check the badge on PRs.
+
+** Compatibility
+- Go 1.13 and above.
+- Standard library only, no external dependencies.
+
+** Notes
+- Path syntax includes escaping and filter expressions; validate complex paths in tests first.
+- `unsafe` conversions between string and []byte are used to reduce copies; ensure it fits your environment.
+- ANSI color output may not render in some terminals.
+
+** License
+- See LICENSE in this repository.

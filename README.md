@@ -1,11 +1,13 @@
-* qjson
-[[https://github.com/qjpcpu/qjson/actions/workflows/ci.yml][https://github.com/qjpcpu/qjson/actions/workflows/ci.yml/badge.svg]]
-[[https://codecov.io/gh/qjpcpu/qjson][https://codecov.io/gh/qjpcpu/qjson/branch/main/graph/badge.svg]]
-[[https://go.dev/][https://img.shields.io/badge/go-1.13%2B-00ADD8?logo=go]]
-[[LICENSE][https://img.shields.io/badge/license-MIT-green]]
+# qjson
+
+[![CI](https://github.com/qjpcpu/qjson/actions/workflows/ci.yml/badge.svg)](https://github.com/qjpcpu/qjson/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/qjpcpu/qjson/branch/main/graph/badge.svg)](https://codecov.io/gh/qjpcpu/qjson)
+[![Go Version](https://img.shields.io/badge/go-1.13%2B-00ADD8?logo=go)](https://go.dev/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+
 Fast, lightweight JSON encode/decode and query library. It provides an inspectable/mutable JSONTree structure and a powerful QJSON Path query syntax.
 
-** Highlights
+## Highlights
 - High‑performance parsing: decode raw JSON into traversable `JSONTree`/`Node` with object pool reuse to reduce GC pressure.
 - QJSON Path queries: access by object keys and array indexes; support the `#` selector and filters (`==`, `=`, `!==`, `!=`, `>`, `>=`, `<`, `<=`), plus escaped dots in keys.
 - In‑place mutation: set values via `SetString/SetInt/SetBool/SetFloat`, remove object keys and array elements.
@@ -15,25 +17,15 @@ Fast, lightweight JSON encode/decode and query library. It provides an inspectab
 - Diff: `Diff()` produces a list of differences between two trees, useful for change audits and test comparisons.
 - Zero external dependencies: standard library only (Go ≥ 1.13).
 
-** Install
-#+begin_src bash
+## Install
+
+```bash
 go get -u github.com/qjpcpu/qjson@latest
-#+end_src
+```
 
-** Badges
-- Build: GitHub Actions CI (tests + coverage)
-- Coverage: Codecov badge (optional; see CI setup)
-- Go: uses version from `go.mod`
-- License: MIT
+## Quick Start
 
-[[https://github.com/qjpcpu/qjson/actions/workflows/ci.yml][https://github.com/qjpcpu/qjson/actions/workflows/ci.yml/badge.svg]]
-[[https://codecov.io/gh/qjpcpu/qjson][https://codecov.io/gh/qjpcpu/qjson/branch/main/graph/badge.svg]]
-[[https://go.dev/][https://img.shields.io/badge/go-1.13%2B-00ADD8?logo=go]]
-[[LICENSE][https://img.shields.io/badge/license-MIT-green]]
-
-
-** Quick Start
-#+begin_src go
+```go
 package main
 
 import (
@@ -62,9 +54,9 @@ func main() {
   // Color output
   fmt.Println(string(tree.ColorfulMarshal()))
 }
-#+end_src
+```
 
-** QJSON Path Syntax
+## QJSON Path Syntax
 - Basics: use `.` to access object keys or array indexes
   - `name.last` → "Anderson"
   - `children.1` → "Alex"
@@ -76,8 +68,9 @@ func main() {
   - Nested: `friends.#(nets.#(=="fb"))`
 - Escaping: keys containing `.` must escape the dot, e.g. `fav\.movie` or raw string literal `fav\.movie`
 
-** Modify & Delete
-#+begin_src go
+## Modify & Delete
+
+```go
 // Modify
 tree.Find(`name.first`).SetString("Link")
 tree.Find(`age`).SetInt(12)
@@ -88,10 +81,11 @@ tree.Remove(`name.last`)
 // Remove array element; clear array
 tree.Remove(`children.0`)
 tree.Remove(`children.#`)
-#+end_src
+```
 
-** Object Conversion & Std Encoding
-#+begin_src go
+## Object Conversion & Std Encoding
+
+```go
 // Any object → JSONTree
 tree, err := qjson.ConvertToJSONTree(&struct{ X string `json:"x"` }{X:"1"})
 
@@ -99,18 +93,20 @@ tree, err := qjson.ConvertToJSONTree(&struct{ X string `json:"x"` }{X:"1"})
 var t qjson.JSONTree
 json.Unmarshal([]byte(`{"a":1}`), &t)
 data, _ := json.Marshal(&t)
-#+end_src
+```
 
-** Color Output
-#+begin_src go
+## Color Output
+
+```go
 // Non‑indented color
 fmt.Println(string(tree.ColorfulMarshal()))
 // Indented color
 fmt.Println(string(tree.ColorfulMarshalWithIndent()))
-#+end_src
+```
 
-** Equality, Hash & Diff
-#+begin_src go
+## Equality, Hash & Diff
+
+```go
 t1, _ := qjson.Decode([]byte(`{"a":1}`))
 t2, _ := qjson.Decode([]byte(`{"a":1}`))
 fmt.Println(t1.Equal(t2))      // true
@@ -120,31 +116,34 @@ fmt.Println(t1.Root.Hash())    // structural hash
 items := qjson.Diff(t1, t2)
 fmt.Println(items.Exist())     // any differences
 fmt.Println(items.String())    // human‑readable diff
-#+end_src
+```
 
-** Performance & Benchmarks
+## Performance & Benchmarks
 - Object pools and compact data structures improve parsing and manipulation performance.
 - Run benchmarks:
-#+begin_src bash
+
+```bash
 go test -bench=. -benchmem
-#+end_src
+```
 
-** Testing & Coverage
+## Testing & Coverage
 - Run:
-#+begin_src bash
-go test ./... -cover
-#+end_src
-- Coverage: use the printed result (e.g. 87%+) from your environment.
-  - Optional: enable Codecov by adding `CODECOV_TOKEN` secret and check the badge on PRs.
 
-** Compatibility
+```bash
+go test ./... -cover
+```
+
+- Coverage: use the printed result (e.g. 87%+) from your environment.
+- Optional: enable Codecov by adding `CODECOV_TOKEN` secret and check the badge on PRs.
+
+## Compatibility
 - Go 1.13 and above.
 - Standard library only, no external dependencies.
 
-** Notes
+## Notes
 - Path syntax includes escaping and filter expressions; validate complex paths in tests first.
 - `unsafe` conversions between string and []byte are used to reduce copies; ensure it fits your environment.
 - ANSI color output may not render in some terminals.
 
-** License
-- See LICENSE in this repository.
+## License
+MIT — see [LICENSE](LICENSE).

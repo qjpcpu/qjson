@@ -10,13 +10,173 @@ import (
 	"testing"
 
 	"encoding/json"
-
-	"github.com/stretchr/testify/suite"
+	"fmt"
+	"reflect"
 )
 
 type JSONTreeTestSuite struct {
-	suite.Suite
+	t        *testing.T
 	jsonFeed map[string]string
+}
+
+func (s *JSONTreeTestSuite) T() *testing.T { return s.t }
+
+func (s *JSONTreeTestSuite) failf(format string, args ...interface{}) {
+	if s.t == nil {
+		panic(fmt.Sprintf(format, args...))
+	}
+	s.t.Helper()
+	s.t.Fatalf(format, args...)
+}
+
+func (s *JSONTreeTestSuite) NoError(err error, msgAndArgs ...interface{}) {
+	if err != nil {
+		if len(msgAndArgs) > 0 {
+			if fmtStr, ok := msgAndArgs[0].(string); ok {
+				s.failf("unexpected error: %v: %s", err, fmt.Sprintf(fmtStr, msgAndArgs[1:]...))
+				return
+			}
+		}
+		s.failf("unexpected error: %v", err)
+	}
+}
+
+func isNil(i interface{}) bool {
+	if i == nil {
+		return true
+	}
+	v := reflect.ValueOf(i)
+	switch v.Kind() {
+	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Ptr, reflect.Slice:
+		return v.IsNil()
+	}
+	return false
+}
+
+func (s *JSONTreeTestSuite) Nil(i interface{}, msgAndArgs ...interface{}) {
+	if !isNil(i) {
+		if len(msgAndArgs) > 0 {
+			if fmtStr, ok := msgAndArgs[0].(string); ok {
+				s.failf("expected nil: %s", fmt.Sprintf(fmtStr, msgAndArgs[1:]...))
+				return
+			}
+		}
+		s.failf("expected nil, got %v", i)
+	}
+}
+
+func (s *JSONTreeTestSuite) NotNil(i interface{}, msgAndArgs ...interface{}) {
+	if isNil(i) {
+		if len(msgAndArgs) > 0 {
+			if fmtStr, ok := msgAndArgs[0].(string); ok {
+				s.failf("unexpected nil: %s", fmt.Sprintf(fmtStr, msgAndArgs[1:]...))
+				return
+			}
+		}
+		s.failf("unexpected nil")
+	}
+}
+
+func (s *JSONTreeTestSuite) Equal(expected, actual interface{}, msgAndArgs ...interface{}) {
+	if !reflect.DeepEqual(expected, actual) {
+		if len(msgAndArgs) > 0 {
+			if fmtStr, ok := msgAndArgs[0].(string); ok {
+				s.failf("not equal: %s\nexpected: %#v\nactual  : %#v", fmt.Sprintf(fmtStr, msgAndArgs[1:]...), expected, actual)
+				return
+			}
+		}
+		s.failf("not equal\nexpected: %#v\nactual  : %#v", expected, actual)
+	}
+}
+
+func (s *JSONTreeTestSuite) Len(obj interface{}, length int, msgAndArgs ...interface{}) {
+	v := reflect.ValueOf(obj)
+	var l int
+	switch v.Kind() {
+	case reflect.Array, reflect.Slice, reflect.Map, reflect.String:
+		l = v.Len()
+	default:
+		s.failf("Len() unsupported kind: %s", v.Kind())
+		return
+	}
+	if l != length {
+		if len(msgAndArgs) > 0 {
+			if fmtStr, ok := msgAndArgs[0].(string); ok {
+				s.failf("length mismatch: %s\nexpected: %d\nactual  : %d", fmt.Sprintf(fmtStr, msgAndArgs[1:]...), length, l)
+				return
+			}
+		}
+		s.failf("length mismatch\nexpected: %d\nactual  : %d", length, l)
+	}
+}
+
+func (s *JSONTreeTestSuite) True(b bool, msgAndArgs ...interface{}) {
+	if !b {
+		if len(msgAndArgs) > 0 {
+			if fmtStr, ok := msgAndArgs[0].(string); ok {
+				s.failf("expected true: %s", fmt.Sprintf(fmtStr, msgAndArgs[1:]...))
+				return
+			}
+		}
+		s.failf("expected true, got false")
+	}
+}
+
+func (s *JSONTreeTestSuite) False(b bool, msgAndArgs ...interface{}) {
+	if b {
+		if len(msgAndArgs) > 0 {
+			if fmtStr, ok := msgAndArgs[0].(string); ok {
+				s.failf("expected false: %s", fmt.Sprintf(fmtStr, msgAndArgs[1:]...))
+				return
+			}
+		}
+		s.failf("expected false, got true")
+	}
+}
+
+func (s *JSONTreeTestSuite) Empty(obj interface{}, msgAndArgs ...interface{}) {
+	v := reflect.ValueOf(obj)
+	empty := false
+	switch v.Kind() {
+	case reflect.Array, reflect.Slice, reflect.Map, reflect.String:
+		empty = v.Len() == 0
+	default:
+		// unsupported kinds treated as non-empty
+		empty = false
+	}
+	if !empty {
+		if len(msgAndArgs) > 0 {
+			if fmtStr, ok := msgAndArgs[0].(string); ok {
+				s.failf("expected empty: %s", fmt.Sprintf(fmtStr, msgAndArgs[1:]...))
+				return
+			}
+		}
+		s.failf("expected empty, got len=%d", v.Len())
+	}
+}
+
+func (s *JSONTreeTestSuite) Error(err error, msgAndArgs ...interface{}) {
+	if err == nil {
+		if len(msgAndArgs) > 0 {
+			if fmtStr, ok := msgAndArgs[0].(string); ok {
+				s.failf("expected error: %s", fmt.Sprintf(fmtStr, msgAndArgs[1:]...))
+				return
+			}
+		}
+		s.failf("expected error, got nil")
+	}
+}
+
+func (s *JSONTreeTestSuite) NotEqual(expected, actual interface{}, msgAndArgs ...interface{}) {
+	if reflect.DeepEqual(expected, actual) {
+		if len(msgAndArgs) > 0 {
+			if fmtStr, ok := msgAndArgs[0].(string); ok {
+				s.failf("unexpected equal: %s\nvalue: %#v", fmt.Sprintf(fmtStr, msgAndArgs[1:]...), actual)
+				return
+			}
+		}
+		s.failf("unexpected equal\nvalue: %#v", actual)
+	}
 }
 
 func (suite *JSONTreeTestSuite) BeforeTest(suiteName, testName string) {
@@ -34,7 +194,21 @@ func (suite *JSONTreeTestSuite) AfterTest(suiteName, testName string) {
 }
 
 func TestJSONTree(t *testing.T) {
-	suite.Run(t, &JSONTreeTestSuite{})
+	s := &JSONTreeTestSuite{t: t}
+	typ := reflect.TypeOf(s)
+	suiteName := typ.Elem().Name()
+	for i := 0; i < typ.NumMethod(); i++ {
+		m := typ.Method(i)
+		if strings.HasPrefix(m.Name, "Test") {
+			name := m.Name
+			t.Run(name, func(t *testing.T) {
+				s2 := &JSONTreeTestSuite{t: t}
+				s2.BeforeTest(suiteName, name)
+				m.Func.Call([]reflect.Value{reflect.ValueOf(s2)})
+				s2.AfterTest(suiteName, name)
+			})
+		}
+	}
 }
 
 func (suite *JSONTreeTestSuite) TestWithStdLib() {

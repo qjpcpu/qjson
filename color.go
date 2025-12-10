@@ -2,13 +2,15 @@ package qjson
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
-
-	"github.com/fatih/color"
 )
 
 var (
+	// ANSI color codes
+	ansiReset  = "\x1b[0m"
 	colorFuncs = []func(a ...interface{}) string{
+		// identity (no color)
 		func(e ...interface{}) string {
 			var s string
 			for _, v := range e {
@@ -16,16 +18,37 @@ var (
 			}
 			return s
 		},
-		color.New(color.FgYellow, color.Bold).SprintFunc(),
-		color.New(color.FgCyan, color.Bold).SprintFunc(),
-		color.New(color.FgGreen, color.Bold).SprintFunc(),
-		color.New(color.FgMagenta, color.Bold).SprintFunc(),
-		color.New(color.FgBlue, color.Bold).SprintFunc(),
-		color.New(color.FgRed, color.Bold).SprintFunc(),
-		color.New(color.FgWhite, color.BgBlack, color.Bold).SprintFunc(),
-		color.New(color.FgBlack, color.BgWhite, color.Bold).SprintFunc(),
+		makeAnsiSprint(1, 33),     // bold yellow
+		makeAnsiSprint(1, 36),     // bold cyan
+		makeAnsiSprint(1, 32),     // bold green
+		makeAnsiSprint(1, 35),     // bold magenta
+		makeAnsiSprint(1, 34),     // bold blue
+		makeAnsiSprint(1, 31),     // bold red
+		makeAnsiSprint(1, 37, 40), // bold white on black
+		makeAnsiSprint(1, 30, 47), // bold black on white
 	}
 )
+
+func makeAnsiSprint(codes ...int) func(a ...interface{}) string {
+	// build CSI prefix with given codes
+	var b strings.Builder
+	b.WriteString("\x1b[")
+	for i, c := range codes {
+		if i > 0 {
+			b.WriteByte(';')
+		}
+		b.WriteString(strconv.Itoa(c))
+	}
+	b.WriteByte('m')
+	prefix := b.String()
+	return func(a ...interface{}) string {
+		var s string
+		for _, v := range a {
+			s += fmt.Sprint(v)
+		}
+		return prefix + s + ansiReset
+	}
+}
 
 // Formatter json with indent
 type Formatter struct {

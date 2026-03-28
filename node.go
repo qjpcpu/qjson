@@ -496,7 +496,7 @@ func (n *Node) Equal(o *Node) bool {
 			if val == nil || val.IsNull() {
 				continue
 			}
-			slice2 = append(slice2, n.ArrayValues[i])
+			slice2 = append(slice2, o.ArrayValues[i])
 		}
 		if len(slice1) != len(slice2) {
 			return false

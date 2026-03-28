@@ -1478,6 +1478,10 @@ func (suite *JSONTreeTestSuite) TestJSONEqual() {
 	t1, _ := Decode([]byte(s1))
 	t2, _ := Decode([]byte(s2))
 	suite.True(t1.Equal(t2))
+
+	t3, _ := Decode([]byte(`[1,2,3]`))
+	t4, _ := Decode([]byte(`[1,2,4]`))
+	suite.False(t3.Equal(t4))
 }
 
 func (suite *JSONTreeTestSuite) testEqHash(s1, s2 string) {
